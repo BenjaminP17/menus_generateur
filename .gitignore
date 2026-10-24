@@ -1,0 +1,31 @@
+# Dépendances
+vendor/
+node_modules/
+
+# Bases de données : données personnelles, jamais versionnées (voir CLAUDE.md)
+*.sqlite
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm
+*.db
+
+# Secrets et configuration locale
+.env
+.env.*
+!.env.example
+config.local.php
+
+# Caches et résultats de tests
+.phpunit.result.cache
+.php-cs-fixer.cache
+.phpstan.cache
+*.log
+
+# Configuration propre à l'éditeur ou à l'outil
+.claude/settings.local.json
+.idea/
+.vscode/
+
+# Fichiers système
+.DS_Store
+Thumbs.db
