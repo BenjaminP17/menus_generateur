@@ -1,0 +1,54 @@
+{
+  "permissions": {
+    "defaultMode": "acceptEdits",
+    "allow": [
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git show*)",
+      "Bash(git branch*)",
+      "Bash(ls*)",
+      "Bash(php -v)",
+      "Bash(php -l *)",
+      "Bash(php -m)",
+      "Bash(php -S localhost:*)",
+      "Bash(composer validate*)",
+      "Bash(composer dump-autoload*)",
+      "Bash(composer install)",
+      "Bash(php bin/console debug:router*)",
+      "Bash(php bin/console debug:container*)",
+      "Bash(php bin/console cache:clear*)",
+      "Bash(php bin/console lint:container*)",
+      "Bash(vendor/bin/phpunit*)",
+      "Bash(vendor/bin/phpstan*)",
+      "Bash(vendor/bin/php-cs-fixer*)"
+    ],
+    "ask": [
+      "Bash(git add*)",
+      "Bash(git commit*)",
+      "Bash(git push*)",
+      "Bash(git checkout*)",
+      "Bash(git merge*)",
+      "Bash(composer require*)",
+      "Bash(composer update*)",
+      "Bash(npm install*)",
+      "Edit(PRD.md)",
+      "Edit(CLAUDE.md)"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./config.local.php)",
+      "Read(**/*.sqlite)",
+      "Read(**/*.db)",
+      "Edit(./.env*)",
+      "Bash(git push --force*)",
+      "Bash(git push -f*)",
+      "Bash(git reset --hard*)",
+      "Bash(git clean*)",
+      "Bash(rm -rf*)",
+      "Bash(curl*)",
+      "Bash(wget*)"
+    ]
+  }
+}

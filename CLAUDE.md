@@ -8,10 +8,10 @@ Application web de génération de menus hebdomadaires (déjeuner et dîner) à 
 
 ## Stack technique
 
-- Backend : API JSON en PHP 8.1 ou plus récent. Les règles métier (saisons, semaine / week-end, variété) vivent côté PHP.
+- Backend : API JSON en PHP 8.2 ou plus récent, sur Symfony 7.4 LTS (squelette minimal, `symfony/skeleton`, sans API Platform). Les règles métier (saisons, semaine / week-end, variété) vivent côté PHP, dans des classes PHP pures indépendantes du framework. Accès à la base : PDO direct, sans Doctrine. `config.platform.php` fixé à `8.2` dans `composer.json`.
 - Frontend : JavaScript vanilla, modules ES natifs (`type="module"`), sans build ni framework. Un module `api.js` centralise les appels `fetch`. Éviter `innerHTML` avec des données utilisateur.
 - Persistance : SQLite via PDO. Le fichier de base est hors du dossier public et n'est jamais commité.
-- Hébergement : o2switch (PHP 8.1, `pdo_sqlite` et `sqlite3` disponibles en CLI). Vérifier la version PHP du site web dans cPanel, qui peut différer de la CLI.
+- Hébergement : o2switch (PHP 8.3 ou 8.4 sur le site web, `pdo_sqlite` requis). La racine web pointe sur `public/` ; le fichier SQLite reste hors de `public/`. Vérifier la version PHP du site dans cPanel, qui peut différer de la CLI.
 
 ## Commandes
 
