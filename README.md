@@ -6,19 +6,36 @@ _À compléter : objectif du projet en une ou deux phrases._
 
 ## Prérequis
 
-_À compléter._
+- PHP 8.2 ou plus, avec les extensions `pdo_sqlite`, `ctype`, `iconv`, `mbstring`
+- Composer 2
 
 ## Installation
 
-_À compléter._
+```bash
+composer install
+```
+
+Le fichier `.env.local` (non versionné) doit contenir un `APP_SECRET` propre à chaque installation :
+
+```bash
+echo "APP_SECRET=$(php -r 'echo bin2hex(random_bytes(32));')" > .env.local
+```
 
 ## Lancement
 
-_À compléter._
+```bash
+php -S localhost:8000 -t public
+```
+
+Vérifier que l'API répond : `http://localhost:8000/api/health` renvoie `{"status":"ok"}`.
 
 ## Tests
 
-_À compléter._
+```bash
+vendor/bin/phpunit
+vendor/bin/phpstan analyse
+vendor/bin/php-cs-fixer fix --dry-run
+```
 
 ## Documentation
 

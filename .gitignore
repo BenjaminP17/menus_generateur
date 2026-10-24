@@ -9,10 +9,8 @@ node_modules/
 *.sqlite-shm
 *.db
 
-# Secrets et configuration locale
-.env
-.env.*
-!.env.example
+# Secrets et configuration locale : .env est versionné (valeurs par défaut sans secret),
+# les valeurs réelles vont dans .env.local (voir bloc Symfony ci-dessous)
 config.local.php
 
 # Caches et résultats de tests
@@ -29,3 +27,23 @@ config.local.php
 # Fichiers système
 .DS_Store
 Thumbs.db
+
+###> symfony/framework-bundle ###
+/.env.local
+/.env.local.php
+/.env.*.local
+/config/secrets/prod/prod.decrypt.private.php
+/public/bundles/
+/var/
+/vendor/
+###< symfony/framework-bundle ###
+
+###> friendsofphp/php-cs-fixer ###
+/.php-cs-fixer.php
+/.php-cs-fixer.cache
+###< friendsofphp/php-cs-fixer ###
+
+###> phpunit/phpunit ###
+/phpunit.xml
+/.phpunit.cache/
+###< phpunit/phpunit ###

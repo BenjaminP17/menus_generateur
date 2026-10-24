@@ -15,7 +15,13 @@ Application web de génération de menus hebdomadaires (déjeuner et dîner) à 
 
 ## Commandes
 
-À compléter dès que la stack est posée (installation, lancement, tests, lint / format).
+- Installation : `composer install`
+- Lancement local : `php -S localhost:8000 -t public`, puis `/api/health`
+- Tests : `vendor/bin/phpunit`
+- Analyse statique : `vendor/bin/phpstan analyse` (configuration dans `phpstan.dist.neon`)
+- Style : `vendor/bin/php-cs-fixer fix` (configuration dans `.php-cs-fixer.dist.php`)
+- Conteneur et routes : `php bin/console lint:container`, `php bin/console debug:router`
+- Secrets locaux : `.env.local` (non versionné), contient notamment `APP_SECRET`
 
 ## Règles métier (source : PRD §5.4)
 
@@ -32,7 +38,12 @@ Ces règles sont le cœur du produit ; le générateur doit les respecter et sig
 
 - Langue des commentaires, des messages de commit et de la documentation : français. Identifiants de code (variables, fonctions, classes) en anglais. Interface et contenu de l'application en français.
 - Style de code : à définir avec le choix des outils de lint / format.
-- Organisation des dossiers : à définir (séparer clairement l'API PHP et le frontend JS).
+- Organisation des dossiers :
+  - `src/` : code PHP (API Symfony) ; `src/Controller/` pour les endpoints, `src/Database/` pour la connexion PDO, le générateur à venir dans `src/Menu/` (classes PHP pures).
+  - `config/` : configuration Symfony ; `config/services.yaml` fixe le chemin de la base.
+  - `public/` : racine web. Le frontend (modules ES, `public/js/api.js` centralise les `fetch`) est servi tel quel depuis `public/`, même origine, sans build.
+  - `var/` : cache et base SQLite (`var/data/menus.sqlite`), jamais versionnés.
+  - `tests/` : tests PHPUnit.
 
 ## Points de vigilance
 
