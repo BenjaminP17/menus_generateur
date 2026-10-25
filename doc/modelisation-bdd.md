@@ -90,9 +90,12 @@ Le générateur travaille en trois temps.
 
 La rétention de `proposition` est fixée à 8 semaines : les lignes plus anciennes sont supprimées pour garder le journal petit.
 
+## Décisions
+
+- **Moment d'écriture dans `proposition`** : à la validation du menu, via un bouton « Valider le menu ». Pas à chaque génération, pour ne pas enregistrer les suggestions rejetées. Une nouvelle validation remplace les lignes de la semaine concernée, pour que le journal corresponde toujours au dernier menu validé.
+
 ## Points à décider
 
-- **Moment d'écriture dans `proposition`** : à chaque génération, ou seulement quand l'utilisateur valide le menu ? Recommandation : à la validation, pour ne pas enregistrer les suggestions rejetées. Cela implique un bouton « Valider le menu ».
 - **Force de la pénalité de fraîcheur** et **durée de rétention** (8 semaines proposé).
 
 ## DDL SQLite
