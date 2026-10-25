@@ -100,31 +100,33 @@ La rétention de `proposition` est fixée à 8 semaines : les lignes plus ancien
 
 ## DDL SQLite
 
-```sql
-PRAGMA foreign_keys = ON;
+Ce DDL est repris à l'identique dans [`config/schema.sql`](../config/schema.sql), qui est la version exécutée : la commande `php bin/console app:db:init` l'applique sur la base. Toute modification du modèle se fait dans les deux fichiers.
 
-CREATE TABLE categorie_principale (
+Le fichier est rejouable : `IF NOT EXISTS` sur les tables et les index, `INSERT OR IGNORE` sur les catégories, pour que `app:db:init` puisse être relancée sans rien détruire. La contrainte de table sur les repas autorisés vient après la dernière colonne : SQLite refuse une contrainte de table placée entre deux colonnes.
+
+```sql
+CREATE TABLE IF NOT EXISTS categorie_principale (
   id INTEGER PRIMARY KEY,
   libelle TEXT NOT NULL UNIQUE
 );
 
-CREATE TABLE plat (
+CREATE TABLE IF NOT EXISTS plat (
   id INTEGER PRIMARY KEY,
   nom TEXT NOT NULL,
   nom_normalise TEXT NOT NULL UNIQUE,
   convient_dejeuner INTEGER NOT NULL DEFAULT 1 CHECK (convient_dejeuner IN (0, 1)),
   convient_diner INTEGER NOT NULL DEFAULT 1 CHECK (convient_diner IN (0, 1)),
-  CHECK (convient_dejeuner = 1 OR convient_diner = 1),
   saison TEXT NOT NULL CHECK (saison IN ('printemps_ete', 'automne_hiver', 'hybride')),
   type TEXT NOT NULL CHECK (type IN ('classique', 'vegetarien')),
   niveau TEXT NOT NULL CHECK (niveau IN ('rapide', 'elabore')),
   categorie_principale_id INTEGER NOT NULL REFERENCES categorie_principale (id),
   poids INTEGER NOT NULL DEFAULT 2 CHECK (poids BETWEEN 1 AND 3),
   cree_le TEXT NOT NULL,
-  modifie_le TEXT NOT NULL
+  modifie_le TEXT NOT NULL,
+  CHECK (convient_dejeuner = 1 OR convient_diner = 1)
 );
 
-CREATE TABLE proposition (
+CREATE TABLE IF NOT EXISTS proposition (
   id INTEGER PRIMARY KEY,
   plat_id INTEGER NOT NULL REFERENCES plat (id) ON DELETE CASCADE,
   date_menu TEXT NOT NULL,
@@ -134,11 +136,11 @@ CREATE TABLE proposition (
   cree_le TEXT NOT NULL
 );
 
-CREATE INDEX idx_proposition_plat_date ON proposition (plat_id, date_menu DESC);
-CREATE INDEX idx_proposition_date ON proposition (date_menu);
+CREATE INDEX IF NOT EXISTS idx_proposition_plat_date ON proposition (plat_id, date_menu DESC);
+CREATE INDEX IF NOT EXISTS idx_proposition_date ON proposition (date_menu);
 
 -- Données de référence du PRD §5.1
-INSERT INTO categorie_principale (libelle) VALUES
+INSERT OR IGNORE INTO categorie_principale (libelle) VALUES
   ('pâtes'),
   ('riz / céréales'),
   ('viande'),

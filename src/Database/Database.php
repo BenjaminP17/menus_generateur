@@ -16,6 +16,11 @@ final class Database
     {
     }
 
+    public function path(): string
+    {
+        return $this->path;
+    }
+
     public function connection(): \PDO
     {
         if (null === $this->pdo) {

@@ -21,6 +21,14 @@ Le fichier `.env.local` (non versionné) doit contenir un `APP_SECRET` propre à
 echo "APP_SECRET=$(php -r 'echo bin2hex(random_bytes(32));')" > .env.local
 ```
 
+Créer la base SQLite et son schéma dans `var/data/menus.sqlite` :
+
+```bash
+php bin/console app:db:init
+```
+
+La commande est idempotente : elle crée ce qui manque et ne supprime jamais rien. Pour repartir d'une base vide en développement, supprimer `var/data/menus.sqlite` avant de la relancer.
+
 ## Lancement
 
 ```bash
@@ -41,4 +49,5 @@ vendor/bin/php-cs-fixer fix --dry-run
 
 - [PRD.md](PRD.md) : besoins produit et règles métier
 - [CLAUDE.md](CLAUDE.md) : conventions de travail sur le dépôt
+- [ROADMAP.md](ROADMAP.md) : jalons de développement vers la V1
 - [doc/modelisation-bdd.md](doc/modelisation-bdd.md) : modèle de données (tables, contraintes, DDL SQLite)

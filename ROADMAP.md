@@ -6,10 +6,10 @@ Principe : on construit de bas en haut (données, puis règles métier pures et 
 
 ## Jalon 0 : Fondations de données
 
-- [ ] Fichier `config/schema.sql` (DDL de `doc/modelisation-bdd.md`) avec les 8 catégories de référence
-- [ ] `SchemaInstaller` dans `src/Database/`
-- [ ] Commande console `app:db:init`, idempotente
-- [ ] Tests : schéma installé sur SQLite en mémoire ; `CHECK` et unicité de `nom_normalise` vérifiés
+- [x] Fichier `config/schema.sql` (DDL de `doc/modelisation-bdd.md`) avec les 8 catégories de référence
+- [x] `SchemaInstaller` dans `src/Database/`
+- [x] Commande console `app:db:init`, idempotente
+- [x] Tests : schéma installé sur SQLite en mémoire ; `CHECK` et unicité de `nom_normalise` vérifiés
 
 ## Jalon 1 : Gestion de la base de plats (PRD §5.1)
 

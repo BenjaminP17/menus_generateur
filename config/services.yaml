@@ -24,5 +24,10 @@ services:
         arguments:
             $path: '%kernel.project_dir%/var/data/menus.sqlite'
 
+    # Schéma de référence, installé par la commande app:db:init
+    App\Database\SchemaInstaller:
+        arguments:
+            $schemaPath: '%kernel.project_dir%/config/schema.sql'
+
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
