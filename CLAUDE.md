@@ -37,9 +37,11 @@ Ces règles sont le cœur du produit ; le générateur doit les respecter et sig
 ## Conventions
 
 - Langue des commentaires, des messages de commit et de la documentation : français. Identifiants de code (variables, fonctions, classes) en anglais. Interface et contenu de l'application en français.
-- Style de code : à définir avec le choix des outils de lint / format.
+- API : chemins, champs des payloads et messages en français, alignés sur les colonnes de la base ; les classes et propriétés PHP restent en anglais. La traduction vit dans `src/Controller/DishPayload.php`, pour que `src/Menu/` ignore le vocabulaire HTTP. Contrat complet dans `doc/api.md`.
+- Toute erreur d'API utilise la forme `{"erreur": "...", "champs": {"<champ>": "..."}}`, construite par `src/Controller/ApiError.php` ; `champs` n'apparaît que pour les erreurs rattachées à un champ.
+- Style de code : `@Symfony` via php-cs-fixer, phpstan niveau 5 sur `src/` et `tests/`.
 - Organisation des dossiers :
-  - `src/` : code PHP (API Symfony) ; `src/Controller/` pour les endpoints, `src/Database/` pour la connexion PDO, le générateur à venir dans `src/Menu/` (classes PHP pures).
+  - `src/` : code PHP (API Symfony) ; `src/Controller/` pour les endpoints, `src/Database/` pour la connexion PDO et les dépôts, `src/Menu/` pour les classes PHP pures du domaine (enums, `Dish`, validation, horloge) réutilisées par le générateur.
   - `config/` : configuration Symfony ; `config/services.yaml` fixe le chemin de la base.
   - `public/` : racine web. Le frontend (modules ES, `public/js/api.js` centralise les `fetch`) est servi tel quel depuis `public/`, même origine, sans build.
   - `var/` : cache et base SQLite (`var/data/menus.sqlite`), jamais versionnés.
@@ -49,4 +51,7 @@ Ces règles sont le cœur du produit ; le générateur doit les respecter et sig
 
 - Ne pas coder sur une règle marquée « À valider » dans le PRD sans en parler à l'utilisateur ; les questions ouvertes du PRD §7 doivent d'abord être tranchées.
 - Hors périmètre V1 : enregistrement des menus (le journal `proposition` des plats proposés, sans menu, est prévu : voir `doc/modelisation-bdd.md`), comptes, nombre de personnes, liste de courses, recettes détaillées, nutrition, allergies, jours de fête. Ne pas les ajouter.
-- Ne pas committer de données personnelles ni de base de plats réelle ; pas de secrets dans le dépôt.
+- Ne pas committer de données personnelles ni de base de plats réelle ; pas de secrets dans le dépôt. Les plats de test sont fictifs (`tests/Support/DishFactory.php`).
+- `src/Menu/DishNameNormalizer.php` est le seul point qui calcule `nom_normalise` : insertion, modification, détection de doublon et tri doivent passer par lui, sinon l'unicité des noms devient incohérente.
+- Les dépôts reçoivent une connexion `\PDO` (service défini dans `config/services.yaml`), et non `Database`, pour rester testables sur une base en mémoire.
+- Les booléens écrits en base passent par un cast `(int)` : PDO lierait `false` en chaîne vide, que les `CHECK` de SQLite refusent.

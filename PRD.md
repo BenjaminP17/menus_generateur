@@ -72,7 +72,7 @@ Cas d'usage principaux :
 | Niveau | Choix : rapide, élaboré | Oui | Défini manuellement par l'utilisateur |
 
 - L'utilisateur peut ajouter, modifier et supprimer un plat.
-- La suppression d'un plat présent dans un menu en cours ne modifie pas le menu déjà affiché (à valider).
+- La suppression d'un plat est libre et sans condition. Elle ne modifie pas le menu déjà affiché : aucun menu n'est stocké côté serveur. L'historique du plat dans le journal des propositions est effacé en même temps que lui.
 
 ### 5.2 Entrées du générateur
 
@@ -148,6 +148,7 @@ Cas d'usage principaux :
 - Saisons regroupées en deux ensembles : printemps-été et automne-hiver.
 - Jours de fête non pris en compte.
 - Le caractère « rapide » ou « élaboré » est défini par l'utilisateur pour chaque plat, et non calculé à partir d'un temps de préparation.
+- Suppression d'un plat : libre et sans condition, même si le plat figure dans un menu affiché (§5.1).
 
 ### Hypothèses
 

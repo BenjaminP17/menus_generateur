@@ -29,5 +29,11 @@ services:
         arguments:
             $schemaPath: '%kernel.project_dir%/config/schema.sql'
 
+    # Connexion PDO injectée dans les dépôts de src/Database/, pour qu'ils puissent aussi
+    # travailler sur une base en mémoire dans les tests. La connexion reste paresseuse.
+    PDO:
+        class: PDO
+        factory: ['@App\Database\Database', 'connection']
+
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones

@@ -13,11 +13,13 @@ Principe : on construit de bas en haut (données, puis règles métier pures et 
 
 ## Jalon 1 : Gestion de la base de plats (PRD §5.1)
 
-- [ ] Enums PHP (`Season`, `DishType`, `Level`, `MealKind`) et objet `Dish` dans `src/Menu/`
-- [ ] `DishRepository` (PDO) : lister, lire, créer, modifier, supprimer ; `nom_normalise` calculé en PHP (minuscules, sans accents)
-- [ ] `GET/POST /api/plats`, `GET/PUT/DELETE /api/plats/{id}`, `GET /api/categories`
-- [ ] Validation : champs obligatoires, doublon de nom (409), au moins un repas autorisé
-- [ ] Tests PHPUnit du repository et des contrôleurs
+- [x] Enums PHP (`Season`, `DishType`, `Level`, `MealKind`) et objet `Dish` dans `src/Menu/`
+- [x] `DishRepository` (PDO) : lister, lire, créer, modifier, supprimer ; `nom_normalise` calculé en PHP (minuscules, sans accents)
+- [x] `GET/POST /api/plats`, `GET/PUT/DELETE /api/plats/{id}`, `GET /api/categories`
+- [x] Validation : champs obligatoires, doublon de nom (409), au moins un repas autorisé
+- [x] Tests PHPUnit du repository et des contrôleurs
+
+Contrat de l'API : [doc/api.md](doc/api.md).
 
 ## Jalon 2 : Frontend de gestion des plats
 
@@ -68,7 +70,7 @@ Optionnel pour une livraison plus rapide, mais le PRD §5.4 demande la règle de
 ## Questions à trancher en cours de route
 
 - **Force de la pénalité de fraîcheur et durée de rétention** (jalon 5) : 8 semaines proposées.
-- **Suppression d'un plat présent dans un menu affiché** (PRD §5.1, « à valider ») : proposition, le menu affiché reste inchangé.
+- **Suppression d'un plat présent dans un menu affiché** (PRD §5.1) : tranché au jalon 1. La suppression est libre et sans condition (204), l'historique du plat part en cascade, et le menu affiché dans le navigateur reste inchangé puisqu'aucun menu n'est stocké côté serveur.
 - **Données de test** : uniquement des plats fictifs, dans les fixtures de tests. Aucune base de plats réelle n'est commitée.
 
 ## Vérification à chaque jalon
