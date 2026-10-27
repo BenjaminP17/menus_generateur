@@ -1,0 +1,9 @@
+# see https://symfony.com/doc/current/rate_limiter.html
+# Limite les tentatives de connexion (SEC-01 / SEC-05) : 5 essais par 15 minutes et par adresse
+# IP, pour freiner le brute force sur le compte unique sans bloquer un oubli de mot de passe.
+framework:
+    rate_limiter:
+        connexion:
+            policy: 'sliding_window'
+            limit: 5
+            interval: '15 minutes'

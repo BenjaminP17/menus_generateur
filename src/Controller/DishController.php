@@ -18,6 +18,12 @@ use Symfony\Component\Routing\Attribute\Route;
  */
 final class DishController
 {
+    // Borne le nombre de chiffres de {id} : sans cette borne, un identifiant assez long pour
+    // dépasser la capacité d'un entier PHP fait échouer la conversion automatique en int et
+    // renvoie une 500 qui révèle le chemin du serveur (SEC-02). 9 chiffres reste très au-dessus
+    // de tout identifiant plausible, sur 32 comme sur 64 bits.
+    private const ID_PATTERN = '\d{1,9}';
+
     public function __construct(
         private readonly DishRepository $dishes,
         private readonly CategoryRepository $categories,
@@ -52,7 +58,7 @@ final class DishController
         );
     }
 
-    #[Route('/api/plats/{id}', name: 'api_plats_show', methods: ['GET'], requirements: ['id' => '\d+'])]
+    #[Route('/api/plats/{id}', name: 'api_plats_show', methods: ['GET'], requirements: ['id' => self::ID_PATTERN])]
     public function show(int $id): JsonResponse
     {
         $dish = $this->dishes->find($id);
@@ -62,7 +68,7 @@ final class DishController
             : new JsonResponse(DishPayload::fromDish($dish));
     }
 
-    #[Route('/api/plats/{id}', name: 'api_plats_update', methods: ['PUT'], requirements: ['id' => '\d+'])]
+    #[Route('/api/plats/{id}', name: 'api_plats_update', methods: ['PUT'], requirements: ['id' => self::ID_PATTERN])]
     public function update(int $id, Request $request): JsonResponse
     {
         $input = $this->readInput($request);
@@ -81,7 +87,7 @@ final class DishController
             : new JsonResponse(DishPayload::fromDish($dish));
     }
 
-    #[Route('/api/plats/{id}', name: 'api_plats_delete', methods: ['DELETE'], requirements: ['id' => '\d+'])]
+    #[Route('/api/plats/{id}', name: 'api_plats_delete', methods: ['DELETE'], requirements: ['id' => self::ID_PATTERN])]
     public function delete(int $id): Response
     {
         if (!$this->dishes->delete($id)) {

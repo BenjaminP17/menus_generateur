@@ -5,14 +5,21 @@ de données dans [modelisation-bdd.md](modelisation-bdd.md).
 
 Conventions : les chemins, les champs des payloads et les messages sont en français, alignés sur
 les colonnes de la base. Les identifiants de code PHP restent en anglais. Toutes les requêtes et
-réponses portent du JSON (`Content-Type: application/json`), en même origine, sans authentification
-(un seul foyer, pas de compte).
+réponses portent du JSON (`Content-Type: application/json`), en même origine.
+
+Authentification (jalon 1b, SEC-01) : un compte unique protège l'API, par session (cookie
+`SameSite=Strict`). Toute route `/api/*` renvoie 401 sans session active, sauf `/api/health` et
+`/api/session` elle-même. Pas de table `utilisateur` : un seul foyer, identifiants dans
+`.env.local` (voir CLAUDE.md).
 
 ## Endpoints
 
 | Méthode | Chemin | Description |
 |---|---|---|
 | GET | `/api/health` | Vérifie que l'API répond et que la base est accessible |
+| GET | `/api/session` | État de la connexion (`{"connecte": true\|false}`), accessible sans session |
+| POST | `/api/session` | Connexion (`{identifiant, mot_de_passe}`) ; 429 au-delà de 5 tentatives / 15 min |
+| DELETE | `/api/session` | Déconnexion |
 | GET | `/api/categories` | Liste les 8 catégories principales (PRD §5.1) |
 | GET | `/api/plats` | Liste tous les plats, triés par nom |
 | POST | `/api/plats` | Crée un plat |
@@ -20,7 +27,8 @@ réponses portent du JSON (`Content-Type: application/json`), en même origine, 
 | PUT | `/api/plats/{id}` | Modifie un plat (remplacement complet) |
 | DELETE | `/api/plats/{id}` | Supprime un plat |
 
-`{id}` doit être un entier : un identifiant non numérique est refusé par le routeur (404).
+`{id}` doit être un entier d'au plus 9 chiffres : un identifiant non numérique ou hors bornes est
+refusé par le routeur (404), proprement, sans révéler de détail serveur (SEC-02).
 
 ## Le plat
 
@@ -107,12 +115,15 @@ ni le déjeuner ni le dîner n'est autorisé. L'interface l'affiche à côté de
 | Cas | Code |
 |---|---|
 | Lecture, liste, modification | 200 |
-| Création | 201, avec l'en-tête `Location` |
-| Suppression | 204, corps vide |
+| Création, connexion réussie | 201 (avec l'en-tête `Location`) ou 204 |
+| Suppression, déconnexion | 204, corps vide |
 | Corps JSON illisible, vide, ou racine qui n'est pas un objet | 400 |
+| Pas de session active (sauf `/api/health` et `/api/session`) | 401 |
 | Plat introuvable | 404 |
 | Un plat porte déjà ce nom | 409, avec `champs.nom` |
 | Validation en échec, ou catégorie principale inconnue | 422, avec `champs` |
+| Identifiant ou mot de passe incorrect | 401 |
+| Trop de tentatives de connexion | 429 |
 
 Deux limites connues :
 

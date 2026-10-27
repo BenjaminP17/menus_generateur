@@ -3,7 +3,11 @@ framework:
     secret: '%env(APP_SECRET)%'
 
     # Note that the session will be started ONLY if you read or write from it.
-    session: true
+    # cookie_samesite et cookie_secure : la session porte l'authentification du compte unique
+    # (jalon 1b, SEC-01), donc on la durcit dès que possible.
+    session:
+        cookie_samesite: strict
+        cookie_secure: auto
 
     #esi: true
     #fragments: true

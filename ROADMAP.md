@@ -21,13 +21,26 @@ Principe : on construit de bas en haut (données, puis règles métier pures et 
 
 Contrat de l'API : [doc/api.md](doc/api.md).
 
+## Jalon 1b : Authentification (SEC-01)
+
+Décidé après l'audit du 2026-10-26 (voir `doc/audit-securite.md`) : un compte unique protège l'API, configuré hors dépôt, sans table `utilisateur` (un seul foyer, rien à distinguer). Session maison, sans `symfony/security-bundle`, cohérente avec le reste du projet (squelette minimal, PDO direct).
+
+- [ ] `APP_AUTH_USER` / `APP_AUTH_PASSWORD_HASH` dans `.env.local` ; commande `app:auth:hash-password` pour calculer le hash
+- [ ] `App\Security\Credentials` : vérifie l'identifiant et le mot de passe (`password_verify`)
+- [ ] `App\EventListener\AuthenticationListener` : bloque `/api/*` sans session active, sauf `/api/health` et `/api/session`
+- [ ] `GET/POST/DELETE /api/session` : état de la connexion, connexion, déconnexion
+- [ ] Limitation des tentatives de connexion (`symfony/rate-limiter`, 5 tentatives / 15 min par IP)
+- [ ] Cookie de session : `SameSite=Strict`, sécurisé en HTTPS
+- [ ] Tests : accès bloqué sans session, connexion/déconnexion, limiteur, routes exemptées
+
 ## Jalon 2 : Frontend de gestion des plats
 
 - [ ] `public/index.html`, `public/js/api.js` (seul module qui appelle `fetch`), modules ES par écran
+- [ ] Écran de connexion (identifiant / mot de passe), redirection sur 401, bouton de déconnexion
 - [ ] Liste des plats et formulaire d'ajout, de modification et de suppression (avec confirmation)
 - [ ] Pas d'`innerHTML` avec des données utilisateur
 - [ ] Mise en page responsive (ordinateur et téléphone), navigation au clavier, focus visible
-- [ ] Livrable : l'utilisateur peut constituer sa base
+- [ ] Livrable : l'utilisateur peut se connecter et constituer sa base
 
 ## Jalon 3 : Cœur du générateur (PRD §5.4)
 
@@ -79,6 +92,6 @@ Optionnel pour une livraison plus rapide, mais le PRD §5.4 demande la règle de
 - `vendor/bin/phpstan analyse`
 - `vendor/bin/php-cs-fixer fix --dry-run`
 - `php bin/console lint:container`
-- Jalons 1 et 4 : `php -S localhost:8000 -t public`, puis appels sur `/api/plats` et `/api/menu`
+- Jalons 1, 1b et 4 : `php -S localhost:8000 -t public`, puis appels sur `/api/plats`, `/api/session` et `/api/menu`
 - Jalons 2, 4 et 6 : test manuel dans le navigateur, sur ordinateur et téléphone, clavier seul
 - Critères de succès du PRD §3 vérifiés par des tests sur le générateur, avec une base de 200 plats fictifs (saison, niveau, absence de doublon, nombre exact de repas, temps de génération)

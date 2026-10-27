@@ -10,7 +10,7 @@ Chaque semaine, composer les repas (déjeuner et dîner) demande du temps et tou
 
 ## 2. Utilisateurs et cas d'usage
 
-**Utilisateur** : un foyer, seul utilisateur de l'application. Il n'y a pas de comptes ni de gestion de plusieurs profils.
+**Utilisateur** : un foyer, seul utilisateur de l'application. Il n'y a ni gestion de plusieurs profils, ni inscription : un compte unique protège l'accès (voir §6).
 
 Cas d'usage principaux :
 
@@ -132,7 +132,7 @@ Cas d'usage principaux :
 - **Plateforme** : application web, utilisable sur ordinateur et sur téléphone.
 - **Performance** : génération d'un menu en moins de 3 secondes avec une base de 200 plats.
 - **Accessibilité** : interface utilisable au clavier, conformité WCAG 2.1 niveau AA.
-- **Confidentialité** : pas de compte, pas de donnée personnelle obligatoire. La base de plats est stockée sur un hébergement privé (o2switch).
+- **Confidentialité** : accès protégé par un compte unique (identifiant et mot de passe, pas d'inscription ni de gestion de plusieurs profils), pas de donnée personnelle obligatoire. La base de plats est stockée sur un hébergement privé (o2switch).
 - **Fiabilité** : le menu généré respecte les règles de la section 5.4. Si la base est insuffisante, l'application l'indique plutôt que de violer une règle.
 
 ## 7. Hypothèses, contraintes et questions ouvertes
@@ -140,7 +140,7 @@ Cas d'usage principaux :
 ### Décisions validées
 
 - Plateforme : application web.
-- Utilisateur : un seul foyer, sans compte.
+- Utilisateur : un seul foyer, protégé par un compte unique (identifiant et mot de passe configurés hors dépôt, pas d'inscription, pas de gestion de plusieurs profils).
 - Source des plats : saisie manuelle par l'utilisateur, pas de génération par IA.
 - Pas d'enregistrement de menus.
 - Pas de gestion du nombre de personnes.
