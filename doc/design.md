@@ -188,6 +188,7 @@ Le point de rupture entre téléphone et ordinateur est à 48 rem (768 px). Le C
 | Bouton destructif | Fond `--danger`, texte blanc ; toujours précédé d'une confirmation |
 | Champ de formulaire | Libellé visible au-dessus, bordure `--bordure`, message d'erreur lié au champ par `aria-describedby` |
 | Confirmation de suppression | Écran ou zone dédiée avec « Supprimer ce plat ? » ; boutons « Supprimer » (destructif) et « Annuler » (secondaire) ; le focus part sur « Annuler » |
+| Confirmation de déconnexion | Fenêtre modale (`<dialog>`) avec « Se déconnecter ? » ; boutons « Se déconnecter » (principal) et « Annuler » (secondaire) ; le focus part sur « Annuler », Échap annule, le focus revient sur le bouton d'origine à la fermeture |
 
 ## 6. Accessibilité
 
@@ -223,6 +224,7 @@ Exigence du PRD §6 : interface utilisable au clavier, conforme WCAG 2.1 niveau 
 | Liste de plats vide | Ajoute ton premier plat |
 | Succès d'enregistrement | Plat enregistré |
 | Confirmation de suppression | Supprimer ce plat ? Cette action est définitive. |
+| Confirmation de déconnexion | Se déconnecter ? |
 | API injoignable | Impossible de joindre le serveur. Réessaie dans un instant. |
 | Session expirée | Ta session a expiré, reconnecte-toi. |
 
