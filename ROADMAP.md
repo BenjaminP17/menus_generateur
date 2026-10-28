@@ -25,13 +25,13 @@ Contrat de l'API : [doc/api.md](doc/api.md).
 
 Décidé après l'audit du 2026-10-26 (voir `doc/audit-securite.md`) : un compte unique protège l'API, configuré hors dépôt, sans table `utilisateur` (un seul foyer, rien à distinguer). Session maison, sans `symfony/security-bundle`, cohérente avec le reste du projet (squelette minimal, PDO direct).
 
-- [ ] `APP_AUTH_USER` / `APP_AUTH_PASSWORD_HASH` dans `.env.local` ; commande `app:auth:hash-password` pour calculer le hash
-- [ ] `App\Security\Credentials` : vérifie l'identifiant et le mot de passe (`password_verify`)
-- [ ] `App\EventListener\AuthenticationListener` : bloque `/api/*` sans session active, sauf `/api/health` et `/api/session`
-- [ ] `GET/POST/DELETE /api/session` : état de la connexion, connexion, déconnexion
-- [ ] Limitation des tentatives de connexion (`symfony/rate-limiter`, 5 tentatives / 15 min par IP)
-- [ ] Cookie de session : `SameSite=Strict`, sécurisé en HTTPS
-- [ ] Tests : accès bloqué sans session, connexion/déconnexion, limiteur, routes exemptées
+- [x] `APP_AUTH_USER` / `APP_AUTH_PASSWORD_HASH` dans `.env.local` ; commande `app:auth:hash-password` pour calculer le hash
+- [x] `App\Security\Credentials` : vérifie l'identifiant et le mot de passe (`password_verify`)
+- [x] `App\EventListener\AuthenticationListener` : bloque `/api/*` sans session active, sauf `/api/health` et `/api/session`
+- [x] `GET/POST/DELETE /api/session` : état de la connexion, connexion, déconnexion
+- [x] Limitation des tentatives de connexion (`symfony/rate-limiter`, 5 tentatives / 15 min par IP)
+- [ ] Cookie de session : `SameSite=Strict` (vérifié), attribut `Secure` à vérifier en HTTPS sur o2switch
+- [x] Tests : accès bloqué sans session, connexion/déconnexion, limiteur, routes exemptées
 
 ## Jalon 2 : Frontend de gestion des plats
 
@@ -40,6 +40,7 @@ Décidé après l'audit du 2026-10-26 (voir `doc/audit-securite.md`) : un compte
 - [ ] Liste des plats et formulaire d'ajout, de modification et de suppression (avec confirmation)
 - [ ] Pas d'`innerHTML` avec des données utilisateur
 - [ ] Mise en page responsive (ordinateur et téléphone), navigation au clavier, focus visible
+- [ ] Respecter `doc/design.md` : palette, composants, écrans, ton (tutoiement) et règles d'accessibilité
 - [ ] Livrable : l'utilisateur peut se connecter et constituer sa base
 
 ## Jalon 3 : Cœur du générateur (PRD §5.4)

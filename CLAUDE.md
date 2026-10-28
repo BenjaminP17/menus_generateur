@@ -44,7 +44,7 @@ Ces règles sont le cœur du produit ; le générateur doit les respecter et sig
 - Organisation des dossiers :
   - `src/` : code PHP (API Symfony) ; `src/Controller/` pour les endpoints, `src/Database/` pour la connexion PDO et les dépôts, `src/Menu/` pour les classes PHP pures du domaine (enums, `Dish`, validation, horloge) réutilisées par le générateur.
   - `config/` : configuration Symfony ; `config/services.yaml` fixe le chemin de la base.
-  - `public/` : racine web. Le frontend (modules ES, `public/js/api.js` centralise les `fetch`) est servi tel quel depuis `public/`, même origine, sans build.
+  - `public/` : racine web. Le frontend (modules ES, `public/js/api.js` centralise les `fetch`) est servi tel quel depuis `public/`, même origine, sans build. Design (palette, écrans, composants, ton) : `doc/design.md`.
   - `var/` : cache et base SQLite (`var/data/menus.sqlite`), jamais versionnés.
   - `tests/` : tests PHPUnit.
 
