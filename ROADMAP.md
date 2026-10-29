@@ -35,13 +35,13 @@ Décidé après l'audit du 2026-10-26 (voir `doc/audit-securite.md`) : un compte
 
 ## Jalon 2 : Frontend de gestion des plats
 
-- [ ] `public/index.html`, `public/js/api.js` (seul module qui appelle `fetch`), modules ES par écran
-- [ ] Écran de connexion (identifiant / mot de passe), redirection sur 401, bouton de déconnexion
-- [ ] Liste des plats et formulaire d'ajout, de modification et de suppression (avec confirmation)
-- [ ] Pas d'`innerHTML` avec des données utilisateur
-- [ ] Mise en page responsive (ordinateur et téléphone), navigation au clavier, focus visible
-- [ ] Respecter `doc/design.md` : palette, composants, écrans, ton (tutoiement) et règles d'accessibilité
-- [ ] Livrable : l'utilisateur peut se connecter et constituer sa base
+- [x] `public/index.html`, `public/js/api.js` (seul module qui appelle `fetch`), modules ES par écran
+- [x] Écran de connexion (identifiant / mot de passe), redirection sur 401, bouton de déconnexion
+- [x] Liste des plats et formulaire d'ajout, de modification et de suppression (avec confirmation)
+- [x] Pas d'`innerHTML` avec des données utilisateur
+- [x] Mise en page responsive (ordinateur et téléphone), navigation au clavier, focus visible
+- [x] Respecter `doc/design.md` : palette, composants, écrans, ton (tutoiement) et règles d'accessibilité
+- [x] Livrable : l'utilisateur peut se connecter et constituer sa base
 
 ## Jalon 3 : Cœur du générateur (PRD §5.4)
 
