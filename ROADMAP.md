@@ -47,20 +47,20 @@ Décidé après l'audit du 2026-10-26 (voir `doc/audit-securite.md`) : un compte
 
 Classes PHP pures dans `src/Menu/`, sans accès à la base ni au framework. Le générateur reçoit une liste de `Dish` et un tirage aléatoire injectable, pour des tests déterministes.
 
-- [ ] `SeasonResolver` : date vers saison (mars à août : printemps-été ; septembre à février : automne-hiver)
-- [ ] `MenuRequest` et sa validation (1 à 7 déjeuners, 1 à 7 dîners, réglage végétarien, date de référence)
-- [ ] Filtrage dur : repas autorisé, saison courante ou hybride, saison opposée exclue, aucun plat en double dans la semaine
-- [ ] Priorités douces : niveau selon le jour (rapide du lundi au vendredi, élaboré le week-end, repli signalé) ; 30 à 40 % d'hybrides ; quota végétarien (aucun, au plus 1 sur 7 jours, au moins 8 sur 14) ; catégorie principale différente entre déjeuner et dîner du même jour
-- [ ] Tirage pondéré selon `poids` (le facteur de fraîcheur arrive au jalon 5)
-- [ ] `BaseDiagnostic` : indique par catégorie si la base suffit pour une semaine complète
-- [ ] Test d'invariant : le menu contient exactement le nombre demandé de déjeuners et de dîners
+- [x] `SeasonResolver` : date vers saison (mars à août : printemps-été ; septembre à février : automne-hiver)
+- [x] `MenuRequest` et sa validation (jours de déjeuner et jours de dîner choisis, 1 à 7 jours distincts chacun, réglage végétarien, date de référence)
+- [x] Filtrage dur : repas autorisé, saison courante ou hybride, saison opposée exclue, aucun plat en double dans la semaine
+- [x] Priorités douces : niveau selon le jour (rapide du lundi au vendredi, élaboré le week-end, repli signalé) ; 30 à 40 % d'hybrides ; quota végétarien (aucun, au plus 1 sur 7 jours, au moins 8 sur 14) ; catégorie principale différente entre déjeuner et dîner du même jour
+- [x] Tirage pondéré selon `poids` (le facteur de fraîcheur arrive au jalon 5)
+- [x] `BaseDiagnostic` : indique par catégorie si la base suffit pour une semaine complète
+- [x] Test d'invariant : le menu contient exactement un déjeuner et un dîner aux jours choisis
 
 ## Jalon 4 : API de génération et écran menu
 
 - [ ] `POST /api/menu` : génère un menu
 - [ ] `POST /api/menu/regenerer` : régénère un repas, ou tout le menu, sans toucher aux autres repas
 - [ ] Choix libre d'un plat existant pour un repas, avec avertissement non bloquant si une règle n'est pas respectée
-- [ ] Frontend : formulaire de réglages, planning sur 7 jours, listes déjeuner et dîner, actions « régénérer ce repas », « choisir un plat », « tout régénérer », affichage des avertissements
+- [ ] Frontend : formulaire de réglages (cases à cocher des jours, pour les déjeuners et pour les dîners), planning sur 7 jours, listes déjeuner et dîner, actions « régénérer ce repas », « choisir un plat », « tout régénérer », affichage des avertissements
 - [ ] Menu conservé côté navigateur (rien n'est stocké côté serveur à ce stade)
 - [ ] Performance : génération en moins de 3 s avec 200 plats
 

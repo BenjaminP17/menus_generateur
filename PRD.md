@@ -15,7 +15,7 @@ Chaque semaine, composer les repas (déjeuner et dîner) demande du temps et tou
 Cas d'usage principaux :
 
 - **Alimenter la base de plats** : l'utilisateur ajoute, modifie et supprime des plats, avec leurs caractéristiques (saison, type, rapide ou élaboré, végétarien ou non).
-- **Générer un menu de la semaine** : l'utilisateur indique combien d'idées il veut pour le déjeuner et pour le dîner, et reçoit un menu sur sept jours.
+- **Générer un menu de la semaine** : l'utilisateur choisit les jours où il veut une idée de déjeuner et ceux où il veut une idée de dîner, et reçoit un menu sur sept jours.
 - **Avoir des idées de saison** : le menu privilégie les plats de la saison en cours.
 - **Adapter le temps de cuisine au jour** : plats rapides en semaine, plats élaborés le week-end.
 - **Varier les types de repas** : proposer des repas végétariens selon le réglage choisi.
@@ -29,7 +29,7 @@ Cas d'usage principaux :
 | Respecter la saison | Au moins 80 % des plats d'un menu appartiennent à la saison en cours ou sont hybrides |
 | Distinguer semaine et week-end | Au moins 90 % des dîners et déjeuners de semaine sont des plats rapides, et au moins 90 % de ceux du week-end sont des plats élaborés, quand la base le permet |
 | Éviter la répétition | Aucun plat identique dans une même semaine |
-| Donner le nombre d'idées demandé | 100 % des menus contiennent exactement le nombre de déjeuners et de dîners demandé |
+| Donner les idées demandées | 100 % des menus contiennent exactement un déjeuner à chaque jour de déjeuner choisi et un dîner à chaque jour de dîner choisi |
 | Base suffisante | L'application indique, pour chaque catégorie, si la base contient assez de plats pour une semaine complète |
 
 ## 4. Périmètre
@@ -38,7 +38,7 @@ Cas d'usage principaux :
 
 - Application web, utilisée par un seul foyer.
 - Gestion de la base de plats : ajout, modification, suppression.
-- Saisie du nombre d'idées pour le déjeuner et pour le dîner.
+- Choix des jours de déjeuner et des jours de dîner.
 - Génération d'un menu sur sept jours (lundi à dimanche).
 - Prise en compte automatique de la saison, déduite de la date du jour (hémisphère nord).
 - Réglage de la part de repas végétariens.
@@ -78,15 +78,15 @@ Cas d'usage principaux :
 
 | Champ | Type | Obligatoire | Règle |
 |---|---|---|---|
-| Nombre d'idées de déjeuner | Entier | Oui | Entre 1 et 7 |
-| Nombre d'idées de dîner | Entier | Oui | Entre 1 et 7 |
+| Jours de déjeuner | Liste de jours (lundi à dimanche) | Oui | De 1 à 7 jours distincts ; le nombre de déjeuners du menu en découle |
+| Jours de dîner | Liste de jours (lundi à dimanche) | Oui | De 1 à 7 jours distincts ; choisis indépendamment des jours de déjeuner |
 | Proportion de repas végétariens | Choix : aucun / quelques-uns / majoritairement | Non | Par défaut : « quelques-uns », soit un repas végétarien au maximum par semaine. « Majoritairement » signifie plus de la moitié des repas du menu, soit au moins 8 repas sur 14 |
 | Date de référence | Date | Non | Par défaut : date du jour ; sert à déterminer la saison |
 
 ### 5.3 Sorties
 
-- Une liste d'idées de déjeuner et une liste d'idées de dîner, de la taille demandée.
-- Un planning sur sept jours associant à chaque jour un déjeuner et un dîner.
+- Une liste d'idées de déjeuner et une liste d'idées de dîner, avec un repas par jour choisi.
+- Un planning sur sept jours associant un déjeuner et un dîner aux jours choisis.
 - Pour chaque repas : nom, saison, type, niveau (rapide ou élaboré).
 - Un message explicite si la base ne permet pas de remplir le menu demandé.
 
@@ -153,12 +153,12 @@ Cas d'usage principaux :
 ### Hypothèses
 
 - L'application est utilisée en France (saisons de l'hémisphère nord, cuisine francophone).
-- Le nombre de déjeuners et de dîners est indépendant : l'utilisateur peut demander plus de dîners que de déjeuners.
+- Les jours de déjeuner et les jours de dîner sont indépendants : l'utilisateur peut demander plus de dîners que de déjeuners, ou des repas à des jours différents.
 - Le volume de la base reste modeste (quelques centaines de plats au maximum).
 
 ### Décisions sur les questions ouvertes
 
-1. **Sens de « nombre d'idées »** : nombre de plats distincts pour chaque type de repas (déjeuners et dîners), pas un total de repas.
+1. **Sens de « idées » demandées** : un plat distinct par repas choisi, pour chaque type de repas (déjeuners et dîners), pas un total de repas. L'utilisateur ne saisit plus un nombre : il choisit les jours, séparément pour les déjeuners et les dîners, et le nombre en découle.
 2. **Période** : menu fixe sur sept jours.
 3. **Hybrides** : conservés comme catégorie à part entière.
 4. **Saison opposée** : plats exclus du menu.

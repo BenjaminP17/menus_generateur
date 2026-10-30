@@ -3,6 +3,7 @@
 namespace App\Tests\Support;
 
 use App\Database\DishRepository;
+use App\Menu\Dish;
 use App\Menu\DishInput;
 use App\Menu\DishInputValidator;
 use App\Menu\DishNameNormalizer;
@@ -78,6 +79,64 @@ final class DishFactory
         bool $fitsDinner = true,
     ): DishInput {
         return new DishInput($name, $fitsLunch, $fitsDinner, $season, $type, $level, $categoryId, $weight);
+    }
+
+    /**
+     * Plat déjà stocké, pour les tests du générateur (aucune base nécessaire).
+     */
+    public static function dish(
+        int $id,
+        Season $season = Season::SpringSummer,
+        DishType $type = DishType::Classic,
+        Level $level = Level::Quick,
+        int $categoryId = 1,
+        int $weight = 2,
+        bool $fitsLunch = true,
+        bool $fitsDinner = true,
+    ): Dish {
+        $date = new \DateTimeImmutable('2026-10-25T12:00:00+00:00');
+        $name = 'Plat fictif '.$id;
+
+        return new Dish(
+            $id,
+            $name,
+            mb_strtolower($name),
+            $fitsLunch,
+            $fitsDinner,
+            $season,
+            $type,
+            $level,
+            $categoryId,
+            $weight,
+            $date,
+            $date,
+        );
+    }
+
+    /**
+     * Base fictive variée, déterministe : saisons, types, niveaux, catégories (1 à 8), poids et
+     * repas autorisés tournent selon l'identifiant.
+     *
+     * @return list<Dish>
+     */
+    public static function catalogue(int $size = 200): array
+    {
+        $seasons = [Season::SpringSummer, Season::AutumnWinter, Season::Hybrid];
+        $dishes = [];
+        for ($id = 1; $id <= $size; ++$id) {
+            $dishes[] = self::dish(
+                $id,
+                $seasons[$id % 3],
+                0 === $id % 4 ? DishType::Vegetarian : DishType::Classic,
+                $id % 6 >= 3 ? Level::Elaborate : Level::Quick,
+                $id % 8 + 1,
+                intdiv($id, 3) % 3 + 1,
+                0 !== $id % 7,
+                0 !== $id % 5,
+            );
+        }
+
+        return $dishes;
     }
 
     public static function repository(\PDO $pdo, ?FixedClock $clock = null): DishRepository

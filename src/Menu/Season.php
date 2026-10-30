@@ -26,6 +26,16 @@ enum Season: string
     }
 
     /**
+     * Un plat de cette saison peut-il figurer dans un menu de la saison en cours ?
+     *
+     * Les hybrides sont acceptés en toute saison ; la saison opposée est exclue (PRD §5.4).
+     */
+    public function acceptedIn(self $current): bool
+    {
+        return self::Hybrid === $this || $this === $current;
+    }
+
+    /**
      * @return list<string> valeurs acceptées, pour les messages de validation
      */
     public static function values(): array

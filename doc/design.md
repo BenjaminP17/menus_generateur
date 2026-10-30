@@ -148,6 +148,7 @@ Le point de rupture entre téléphone et ordinateur est à 48 rem (768 px). Le C
 ```
 
 - Réglages repliables une fois le menu généré, pour laisser la place au planning.
+- Réglages : deux rangées de cases à cocher, une pour les jours de déjeuner et une pour les jours de dîner (lundi à dimanche, au moins un jour chacune), puis la proportion de repas végétariens. Dans la grille, un jour sans repas choisi n'affiche pas de ligne pour ce repas.
 - Sur ordinateur, la grille passe en tableau : une ligne par repas (déjeuner, dîner), une colonne par jour.
 - Actions par repas : « Changer » (nouvelle suggestion), « Choisir » (choix libre d'un plat existant). Action globale : « Tout régénérer ».
 - Base vide : l'illustration d'écran vide, le texte « Ta base est vide. Ajoute quelques plats pour que je puisse composer ton menu. » et un bouton vers « Mes plats ».

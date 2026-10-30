@@ -31,7 +31,7 @@ Ces règles sont le cœur du produit ; le générateur doit les respecter et sig
 - Saisons : printemps-été = mars à août, automne-hiver = septembre à février, hémisphère nord. Un plat est printemps-été, automne-hiver ou hybride. Saison déduite de la date de référence (par défaut la date du jour).
 - Semaine / week-end : lundi à vendredi = plats « rapides » en priorité ; samedi et dimanche = plats « élaborés ». Le niveau est choisi à la main par l'utilisateur pour chaque plat, jamais calculé.
 - Variété : aucun plat identique dans la même semaine ; proportion de repas végétariens selon le réglage (aucun / quelques-uns / majoritairement).
-- Un menu contient exactement le nombre de déjeuners et de dîners demandé.
+- Un menu contient exactement un déjeuner à chaque jour de déjeuner choisi et un dîner à chaque jour de dîner choisi.
 - Régénérer un repas ne modifie pas les autres repas.
 - Pas de génération de plats par un modèle de langage : la base est saisie manuellement.
 
