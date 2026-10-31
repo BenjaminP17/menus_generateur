@@ -43,6 +43,7 @@ Les couleurs sont des variables CSS déclarées une fois sur `:root`. Aucune cou
 | `--alerte-bord` | `#A87A00` | Bordure des avertissements |
 | `--alerte-fond` | `#FFF1CC` | Fond des avertissements |
 | `--alerte-texte` | `#5C4300` | Texte des avertissements |
+| `--selection-fond` | `#F6DFD3` | Fond d'un choix sélectionné (boutons radio et cases) |
 
 ### Pastilles
 
@@ -80,6 +81,9 @@ Seuils : 4,5:1 pour le texte, 3:1 pour les éléments d'interface (bordures, con
 | Pastille rapide | 7,49 | 4,5 |
 | Pastille élaboré | 8,11 | 4,5 |
 | Onglet actif (`--terracotta` sur surface) | 5,39 | 4,5 |
+| Texte `#3B2A20` sur `--selection-fond` | 10,67 | 4,5 |
+| Coche `--terracotta-fonce` sur `--selection-fond` | 5,58 | 3 |
+| Bordure `--terracotta` d'un choix sélectionné sur surface | 5,39 | 3 |
 | Contour de focus sur crème | 5,94 | 3 |
 | Bordure de champ sur surface | 4,60 | 3 |
 | Bordure d'avertissement sur crème | 3,56 | 3 |
@@ -149,8 +153,8 @@ Le point de rupture entre téléphone et ordinateur est à 48 rem (768 px). Le C
 
 - Réglages repliables une fois le menu généré, pour laisser la place au planning.
 - Réglages : deux rangées de cases à cocher, une pour les jours de déjeuner et une pour les jours de dîner (lundi à dimanche, au moins un jour chacune), puis la proportion de repas végétariens. Dans la grille, un jour sans repas choisi n'affiche pas de ligne pour ce repas.
-- Sur ordinateur, la grille passe en tableau : une ligne par repas (déjeuner, dîner), une colonne par jour.
-- Actions par repas : « Changer » (nouvelle suggestion), « Choisir » (choix libre d'un plat existant). Action globale : « Tout régénérer ».
+- Sur ordinateur, les jours passent en grille de cartes (plusieurs colonnes de 15 rem au moins), qui garde chaque nom de plat lisible. Un tableau à sept colonnes était trop étroit.
+- Actions par repas : « Changer » (nouvelle suggestion), « Choisir un plat » (choix libre d'un plat existant, dans une fenêtre modale avec recherche par nom). Action globale : « Tout régénérer ».
 - Base vide : l'illustration d'écran vide, le texte « Ta base est vide. Ajoute quelques plats pour que je puisse composer ton menu. » et un bouton vers « Mes plats ».
 - Avertissements : un bandeau en haut du menu résume les écarts (base insuffisante, niveau de repli, choix libre hors règles). Chaque repas concerné porte en plus une pastille « À vérifier ».
 
@@ -187,6 +191,8 @@ Le point de rupture entre téléphone et ordinateur est à 48 rem (768 px). Le C
 | Bouton principal | Fond `--terracotta`, texte blanc, rayon arrondi, 44 px de haut au minimum |
 | Bouton secondaire | Fond transparent, bordure `--terracotta`, texte `--terracotta` |
 | Bouton destructif | Fond `--danger`, texte blanc ; toujours précédé d'une confirmation |
+| Choix (radio, case) | Pilule à bordure ; sélectionnée : bordure `--terracotta`, fond `--selection-fond`, texte en gras et coche (jamais la couleur seule). Le plein `--terracotta` est réservé aux actions |
+| Barre d'actions | Enregistrer (principal, en premier) et Annuler dans une barre sans fond ni bordure, collée en bas du formulaire (`position: sticky`), au-dessus des onglets sur téléphone ; reprend sa place dans le flux si l'écran fait moins de 32 rem de haut |
 | Champ de formulaire | Libellé visible au-dessus, bordure `--bordure`, message d'erreur lié au champ par `aria-describedby` |
 | Confirmation de suppression | Écran ou zone dédiée avec « Supprimer ce plat ? » ; boutons « Supprimer » (destructif) et « Annuler » (secondaire) ; le focus part sur « Annuler » |
 | Confirmation de déconnexion | Fenêtre modale (`<dialog>`) avec « Se déconnecter ? » ; boutons « Se déconnecter » (principal) et « Annuler » (secondaire) ; le focus part sur « Annuler », Échap annule, le focus revient sur le bouton d'origine à la fermeture |

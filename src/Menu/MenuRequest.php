@@ -37,4 +37,28 @@ final class MenuRequest
             MealKind::Dinner => $this->dinnerDays,
         };
     }
+
+    /**
+     * Repas à composer, aux jours choisis, triés par jour puis déjeuner avant dîner.
+     *
+     * @return list<array{int, MealKind}>
+     */
+    public function slots(): array
+    {
+        $slots = [];
+        foreach ([MealKind::Lunch, MealKind::Dinner] as $kind) {
+            foreach ($this->daysFor($kind) as $day) {
+                $slots[] = [$day, $kind];
+            }
+        }
+
+        usort($slots, static fn (array $a, array $b): int => [$a[0], $a[1]->value] <=> [$b[0], $b[1]->value]);
+
+        return $slots;
+    }
+
+    public function hasSlot(int $day, MealKind $kind): bool
+    {
+        return in_array($day, $this->daysFor($kind), true);
+    }
 }

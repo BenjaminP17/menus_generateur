@@ -165,7 +165,7 @@ export async function vuePlatForm({ id = null, naviguer }) {
         el('div', { class: 'champ' }, el('label', { for: idCategorie }, 'Catégorie principale'), categorie, erreurCategorie),
         poids.racine,
         erreurGlobale,
-        el('div', { class: 'actions' }, bouton, el('a', { class: 'bouton bouton-secondaire', href: '#/plats' }, 'Annuler')),
+        el('div', { class: 'actions barre-actions' }, bouton, el('a', { class: 'bouton bouton-secondaire', href: '#/plats' }, 'Annuler')),
     );
 
     const noeuds = el(

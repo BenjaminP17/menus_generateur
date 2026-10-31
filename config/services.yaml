@@ -45,6 +45,10 @@ services:
         class: PDO
         factory: ['@App\Database\Database', 'connection']
 
+    # Tirage aléatoire du générateur de menus (moteur sécurisé par défaut) ; les tests injectent
+    # un Randomizer amorcé par une graine.
+    Random\Randomizer: ~
+
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
 

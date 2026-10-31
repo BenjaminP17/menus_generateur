@@ -7,6 +7,7 @@ use App\Menu\DishType;
 use App\Menu\Level;
 use App\Menu\MealKind;
 use App\Menu\Menu;
+use App\Menu\MenuEvaluator;
 use App\Menu\MenuGenerator;
 use App\Menu\MenuMeal;
 use App\Menu\MenuRequest;
@@ -258,6 +259,113 @@ final class MenuGeneratorTest extends TestCase
         $this->assertLessThan(3.0, (microtime(true) - $start) / 20);
     }
 
+    public function testRegeneratingOneMealLeavesTheOthersUntouched(): void
+    {
+        $dishes = DishFactory::catalogue();
+        $request = $this->request(self::ALL, self::ALL, VegetarianShare::Some, self::WINTER);
+
+        foreach ([1, 2, 3, 4, 5] as $seed) {
+            $menu = $this->generator($seed)->generate($dishes, $request);
+            $replaced = $this->generator($seed + 100)->regenerate($dishes, $request, $menu->meals, 2, MealKind::Dinner);
+
+            $this->assertNotNull($replaced);
+            $this->assertCount(14, $replaced->meals);
+            foreach ($menu->meals as $index => $meal) {
+                if (2 === $meal->day && MealKind::Dinner === $meal->kind) {
+                    $this->assertNotSame($meal->dish->id, $replaced->meals[$index]->dish->id);
+
+                    continue;
+                }
+                $this->assertSame($meal, $replaced->meals[$index]);
+            }
+            $ids = array_map(static fn (MenuMeal $meal): int => $meal->dish->id, $replaced->meals);
+            $this->assertSame($ids, array_values(array_unique($ids)), 'aucun doublon');
+        }
+    }
+
+    public function testRegeneratingRespectsTheHardRulesAgainstTheOtherMeals(): void
+    {
+        $dishes = DishFactory::catalogue();
+        $request = $this->request([0, 1, 2], [0, 1, 2], VegetarianShare::None, self::SUMMER);
+        $menu = $this->generator(1)->generate($dishes, $request);
+
+        for ($seed = 1; $seed <= 30; ++$seed) {
+            $replaced = $this->generator($seed)->regenerate($dishes, $request, $menu->meals, 1, MealKind::Lunch);
+
+            $this->assertNotNull($replaced);
+            $dish = $replaced->mealsOfKind(MealKind::Lunch)[1]->dish;
+            $this->assertTrue($dish->fitsLunch);
+            $this->assertTrue($dish->season->acceptedIn(Season::SpringSummer));
+            $this->assertNotSame(DishType::Vegetarian, $dish->type, 'aucun végétarien demandé');
+        }
+    }
+
+    public function testRegeneratingFillsAMissingMeal(): void
+    {
+        $dishes = DishFactory::catalogue();
+        $request = $this->request([0, 1], [0], VegetarianShare::Some, self::WINTER);
+        $menu = $this->generator(1)->generate($dishes, $request);
+        $withoutDinner = array_values(array_filter($menu->meals, static fn (MenuMeal $meal): bool => MealKind::Dinner !== $meal->kind));
+
+        $filled = $this->generator(1)->regenerate($dishes, $request, $withoutDinner, 0, MealKind::Dinner);
+
+        $this->assertNotNull($filled);
+        $this->assertCount(3, $filled->meals);
+        $this->assertTrue($filled->isComplete());
+    }
+
+    public function testRegeneratingReturnsNullWhenNoOtherDishFits(): void
+    {
+        $dishes = [DishFactory::dish(1, Season::Hybrid), DishFactory::dish(2, Season::Hybrid, categoryId: 2)];
+        $request = $this->request([0], [1], VegetarianShare::None, self::SUMMER);
+        $menu = $this->generator(1)->generate($dishes, $request);
+
+        $this->assertNull($this->generator(1)->regenerate($dishes, $request, $menu->meals, 0, MealKind::Lunch));
+    }
+
+    public function testPlacingAChosenDishReplacesTheMealAndEvaluatesTheMenu(): void
+    {
+        $dishes = DishFactory::catalogue();
+        $request = $this->request([0, 5], [0], VegetarianShare::None, self::SUMMER);
+        $menu = $this->generator(1)->generate($dishes, $request);
+        $chosen = DishFactory::dish(900, Season::AutumnWinter, DishType::Vegetarian, Level::Elaborate);
+
+        $placed = $this->generator(1)->place($menu->meals, $request, new MenuMeal(0, MealKind::Lunch, $chosen));
+
+        $this->assertCount(3, $placed->meals);
+        $this->assertSame($chosen, $placed->meals[0]->dish);
+        $this->assertSame($menu->meals[1], $placed->meals[1]);
+        $kinds = array_map(static fn (MenuWarning $w): WarningKind => $w->kind, $placed->warnings);
+        $this->assertContains(WarningKind::OutOfSeason, $kinds);
+        $this->assertContains(WarningKind::LevelFallback, $kinds);
+        $this->assertContains(WarningKind::VegetarianExcess, $kinds);
+    }
+
+    public function testPlacingADishInAnEmptySlotKeepsThePlanningOrder(): void
+    {
+        $request = $this->request([0, 2], [1], VegetarianShare::None, self::SUMMER);
+        $meals = [new MenuMeal(0, MealKind::Lunch, DishFactory::dish(1)), new MenuMeal(2, MealKind::Lunch, DishFactory::dish(2))];
+
+        $placed = $this->generator(1)->place($meals, $request, new MenuMeal(1, MealKind::Dinner, DishFactory::dish(3)));
+
+        $this->assertSame(['0dejeuner', '1diner', '2dejeuner'], array_map(static fn (MenuMeal $m): string => $m->day.$m->kind->value, $placed->meals));
+        $this->assertTrue($placed->isComplete());
+    }
+
+    private function generator(int $seed): MenuGenerator
+    {
+        return new MenuGenerator(new SeasonResolver(), new Randomizer(new Mt19937($seed)), new MenuEvaluator(new SeasonResolver()));
+    }
+
+    /**
+     * @param list<int> $lunchDays
+     * @param list<int> $dinnerDays
+     */
+    private function request(array $lunchDays, array $dinnerDays, VegetarianShare $share, string $date): MenuRequest
+    {
+        return new MenuRequest($lunchDays, $dinnerDays, $share, new \DateTimeImmutable($date));
+    }
+
     /**
      * @param list<Dish> $dishes
      * @param list<int>  $lunchDays
@@ -265,7 +373,7 @@ final class MenuGeneratorTest extends TestCase
      */
     private function generate(array $dishes, array $lunchDays, array $dinnerDays, VegetarianShare $share, string $date, int $seed): Menu
     {
-        $generator = new MenuGenerator(new SeasonResolver(), new Randomizer(new Mt19937($seed)));
+        $generator = new MenuGenerator(new SeasonResolver(), new Randomizer(new Mt19937($seed)), new MenuEvaluator(new SeasonResolver()));
 
         return $generator->generate($dishes, new MenuRequest($lunchDays, $dinnerDays, $share, new \DateTimeImmutable($date)));
     }

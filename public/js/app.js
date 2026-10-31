@@ -4,6 +4,7 @@ import { api, ApiError, onNonAuthentifie } from './api.js';
 import { bandeau } from './components.js';
 import { annoncer, el, remplacer } from './dom.js';
 import { icone } from './icons.js';
+import { oublierMenu } from './menu-store.js';
 import { vueConnexion } from './views/login.js';
 import { vueMenu } from './views/menu.js';
 import { vuePlatForm } from './views/plat-form.js';
@@ -41,6 +42,7 @@ async function deconnecter() {
     } catch {
         // Même si la requête échoue, on revient à l'écran de connexion.
     }
+    oublierMenu();
     window.location.hash = '';
     retourConnexion();
 }

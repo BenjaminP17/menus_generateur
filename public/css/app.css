@@ -15,6 +15,7 @@
     --alerte-bord: #A87A00;
     --alerte-fond: #FFF1CC;
     --alerte-texte: #5C4300;
+    --selection-fond: #F6DFD3;
 
     --printemps-ete-texte: #6B4A00;
     --printemps-ete-fond: #FCE9B8;
@@ -43,6 +44,8 @@
 
 html {
     -webkit-text-size-adjust: 100%;
+    /* Un champ qui prend le focus ne doit pas passer sous la barre d'actions ni sous les onglets */
+    scroll-padding-bottom: calc(var(--hauteur-navigation) + 6rem);
 }
 
 body {
@@ -272,6 +275,7 @@ main:focus {
 input[type="text"],
 input[type="password"],
 input[type="search"],
+input[type="date"],
 select {
     width: 100%;
     min-height: 2.75rem;
@@ -308,17 +312,34 @@ select {
     display: inline-flex;
     align-items: center;
     min-height: 2.75rem;
-    padding: 0.5rem 1rem;
+    /* La place de la coche est toujours réservée : choisir ne fait pas bouger la mise en page */
+    padding: 0.5rem 1rem 0.5rem 2.25rem;
     border: 2px solid var(--bordure);
     border-radius: 999px;
     background: var(--surface);
 }
 
+.choix label::before {
+    content: "✓";
+    content: "✓" / "";
+    position: absolute;
+    left: 0.875rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--terracotta-fonce);
+    font-weight: 700;
+    opacity: 0;
+}
+
+/* Un choix sélectionné : bordure épaisse, fond teinté et coche, sans le plein terracotta des actions */
 .choix input:checked + label {
     border-color: var(--terracotta);
-    background: var(--terracotta);
-    color: #fff;
-    font-weight: 600;
+    background: var(--selection-fond);
+    font-weight: 700;
+}
+
+.choix input:checked + label::before {
+    opacity: 1;
 }
 
 .choix input:focus-visible + label {
@@ -344,6 +365,39 @@ select {
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
+}
+
+/*
+ * Barre d'actions d'un formulaire (Enregistrer, Annuler) : collée en bas de l'écran pour rester
+ * visible, sans fond ni trait de séparation. Sur téléphone elle se place au-dessus des onglets du bas.
+ */
+.barre-actions {
+    position: sticky;
+    bottom: var(--hauteur-navigation);
+    z-index: 5;
+    margin: 0 -1rem;
+    padding: 0.75rem 1rem;
+}
+
+.barre-actions .bouton {
+    flex: 1 1 8rem;
+}
+
+.barre-actions .bouton-secondaire {
+    /* Sans fond de barre, le bouton à contour garde le sien pour ne pas laisser voir le contenu qui défile dessous */
+    background: var(--creme);
+}
+
+.barre-actions .bouton-principal {
+    min-height: 3rem;
+    font-size: 1.0625rem;
+}
+
+/* Écran trop bas (téléphone en paysage, zoom important) : la barre reprend sa place dans le flux */
+@media (max-height: 32rem) {
+    .barre-actions {
+        position: static;
+    }
 }
 
 /* Bandeaux */
@@ -513,6 +567,148 @@ select {
 .pastille-rapide { background: var(--rapide-fond); color: var(--rapide-texte); }
 .pastille-elabore { background: var(--elabore-fond); color: var(--elabore-texte); }
 
+/* Menu */
+.reglages {
+    margin-bottom: 1rem;
+    padding: 1rem;
+    border-radius: var(--rayon);
+    background: var(--surface);
+    box-shadow: var(--ombre);
+}
+
+.reglages summary {
+    min-height: 2.75rem;
+    padding: 0.5rem 0;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.reglages[open] summary {
+    margin-bottom: 0.5rem;
+}
+
+.zone-menu .en-tete {
+    margin-top: 1rem;
+}
+
+.zone-menu h2 {
+    margin: 0;
+    font-size: 1.25rem;
+}
+
+.zone-menu h2:focus {
+    outline: none;
+}
+
+.bandeau-liste {
+    align-items: flex-start;
+    max-width: none;
+    margin: 0 0 1rem;
+}
+
+.bandeau-liste > div {
+    flex: 1;
+}
+
+.bandeau-titre {
+    font-weight: 700;
+}
+
+.bandeau-liste ul {
+    margin: 0;
+    padding-left: 1.25rem;
+}
+
+.planning,
+.repas-liste {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.planning {
+    display: grid;
+    gap: 1rem;
+}
+
+.jour {
+    padding: 1rem;
+    border-radius: var(--rayon);
+    background: var(--surface);
+    box-shadow: var(--ombre);
+}
+
+.jour h3 {
+    margin: 0 0 0.5rem;
+    font-size: 1.125rem;
+}
+
+.repas-liste {
+    display: grid;
+    gap: 1rem;
+}
+
+.repas {
+    display: grid;
+    gap: 0.5rem;
+}
+
+.repas + .repas {
+    padding-top: 1rem;
+    border-top: 1px solid var(--bordure);
+}
+
+.repas-titre {
+    margin: 0;
+    color: var(--brun-doux);
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.repas-plat {
+    margin: 0;
+    font-weight: 700;
+}
+
+.pastille-verifier {
+    border: 1px solid var(--alerte-bord);
+    background: var(--alerte-fond);
+    color: var(--alerte-texte);
+}
+
+.bouton-petit {
+    min-height: 2.75rem;
+    padding: 0.25rem 1rem;
+    font-size: 0.875rem;
+}
+
+/* Choix libre d'un plat */
+.dialogue-plats {
+    width: min(32rem, calc(100vw - 2rem));
+    max-width: none;
+}
+
+.dialogue-plats h2 {
+    margin: 0 0 1rem;
+    font-size: 1.125rem;
+}
+
+.liste-choix {
+    max-height: 50vh;
+    margin: 1rem 0;
+    overflow-y: auto;
+}
+
+.carte-bouton {
+    width: 100%;
+    border: 0;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
 /* Ordinateur : navigation en haut, listes en grille */
 @media (min-width: 48rem) {
     body {
@@ -546,6 +742,33 @@ select {
 
     main {
         padding: 2rem 1rem;
+    }
+
+    html {
+        scroll-padding-bottom: 6rem;
+    }
+
+    .barre-actions {
+        bottom: 0;
+    }
+
+    .barre-actions .bouton {
+        flex: 0 0 auto;
+    }
+
+    main:has(.ecran-menu) {
+        max-width: 64rem;
+    }
+
+    .planning {
+        grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+        align-items: start;
+    }
+}
+
+@media (forced-colors: active) {
+    .choix input:checked + label {
+        border-color: Highlight;
     }
 }
 

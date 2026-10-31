@@ -72,4 +72,12 @@ export const api = {
     creerPlat: (plat) => requete('POST', '/api/plats', plat),
     modifierPlat: (id, plat) => requete('PUT', `/api/plats/${encodeURIComponent(id)}`, plat),
     supprimerPlat: (id) => requete('DELETE', `/api/plats/${encodeURIComponent(id)}`),
+
+    // Le menu n'est pas stocké côté serveur : chaque appel renvoie les réglages et le menu en
+    // cours (`repas` : [{ jour, repas, plat_id }]) et reçoit le menu complet.
+    genererMenu: async (reglages) => (await requete('POST', '/api/menu', reglages)).menu,
+    regenererRepas: async (reglages, repas, cible) =>
+        (await requete('POST', '/api/menu/regenerer', { ...reglages, repas, cible })).menu,
+    choisirPlat: async (reglages, repas, cible, platId) =>
+        (await requete('POST', '/api/menu/choisir', { ...reglages, repas, cible, plat_id: platId })).menu,
 };

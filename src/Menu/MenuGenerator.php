@@ -22,6 +22,9 @@ use Random\Randomizer;
  * Les repas tombent aux jours choisis par l'utilisateur, séparément pour les déjeuners et les
  * dîners. Le facteur de fraîcheur arrive avec le journal des propositions (ROADMAP, jalon 5) :
  * ici le tirage ne dépend que de `poids`.
+ *
+ * Aucun menu n'est conservé : pour changer un repas (`regenerate`, `place`), l'appelant redonne
+ * le menu en cours, et les autres repas restent tels quels.
  */
 final class MenuGenerator
 {
@@ -31,6 +34,7 @@ final class MenuGenerator
     public function __construct(
         private readonly SeasonResolver $seasonResolver,
         private readonly Randomizer $randomizer,
+        private readonly MenuEvaluator $evaluator,
     ) {
     }
 
@@ -39,130 +43,148 @@ final class MenuGenerator
      */
     public function generate(array $dishes, MenuRequest $request): Menu
     {
+        $pool = $this->seasonalPool($dishes, $request);
+        $slots = $request->slots();
+        $total = count($slots);
+
+        /** @var list<MenuMeal> $meals */
+        $meals = [];
+        foreach ($slots as $index => [$day, $kind]) {
+            $dish = $this->pick($pool, $request, $meals, $day, $kind, $total - $index, []);
+            if (null !== $dish) {
+                $meals[] = new MenuMeal($day, $kind, $dish);
+            }
+        }
+
+        return new Menu($meals, $this->evaluator->evaluate($meals, $request));
+    }
+
+    /**
+     * Change le plat d'un seul repas, sans toucher aux autres (PRD §5.3). Le nouveau plat
+     * respecte les mêmes contraintes que celles du tirage initial, vis-à-vis des autres repas
+     * du menu, et diffère du plat actuel.
+     *
+     * @param list<Dish>     $dishes
+     * @param list<MenuMeal> $meals  menu en cours
+     *
+     * @return Menu|null le menu avec le repas changé, ou null si aucun autre plat ne convient
+     */
+    public function regenerate(array $dishes, MenuRequest $request, array $meals, int $day, MealKind $kind): ?Menu
+    {
+        $others = $this->withoutSlot($meals, $day, $kind);
+        $current = array_map(
+            static fn (MenuMeal $meal): int => $meal->dish->id,
+            array_values(array_filter($meals, static fn (MenuMeal $meal): bool => $meal->day === $day && $meal->kind === $kind)),
+        );
+
+        $dish = $this->pick($this->seasonalPool($dishes, $request), $request, $others, $day, $kind, 1, $current);
+        if (null === $dish) {
+            return null;
+        }
+
+        return $this->place($meals, $request, new MenuMeal($day, $kind, $dish));
+    }
+
+    /**
+     * Pose un plat choisi à la main. Le choix est libre : une règle non respectée donne un
+     * avertissement, jamais un refus.
+     *
+     * @param list<MenuMeal> $meals menu en cours
+     */
+    public function place(array $meals, MenuRequest $request, MenuMeal $chosen): Menu
+    {
+        $meals = $this->withoutSlot($meals, $chosen->day, $chosen->kind);
+        $meals[] = $chosen;
+        usort($meals, static fn (MenuMeal $a, MenuMeal $b): int => [$a->day, $a->kind->value] <=> [$b->day, $b->kind->value]);
+
+        return new Menu($meals, $this->evaluator->evaluate($meals, $request));
+    }
+
+    /**
+     * @param list<Dish> $dishes
+     *
+     * @return list<Dish>
+     */
+    private function seasonalPool(array $dishes, MenuRequest $request): array
+    {
         $season = $this->seasonResolver->resolve($request->referenceDate);
-        $pool = array_values(array_filter(
+
+        return array_values(array_filter(
             $dishes,
             static fn (Dish $dish): bool => $dish->season->acceptedIn($season),
         ));
+    }
 
-        $slots = $this->slots($request);
-        $total = count($slots);
+    /**
+     * @param list<MenuMeal> $meals
+     *
+     * @return list<MenuMeal>
+     */
+    private function withoutSlot(array $meals, int $day, MealKind $kind): array
+    {
+        return array_values(array_filter(
+            $meals,
+            static fn (MenuMeal $meal): bool => $meal->day !== $day || $meal->kind !== $kind,
+        ));
+    }
+
+    /**
+     * Tire le plat d'un repas, compte tenu des repas déjà posés.
+     *
+     * @param list<Dish>     $pool      plats de la saison
+     * @param list<MenuMeal> $placed    repas déjà posés ailleurs dans le menu
+     * @param int            $remaining repas restant à placer, celui-ci compris
+     * @param list<int>      $excluded  plats à écarter en plus de ceux déjà posés
+     */
+    private function pick(array $pool, MenuRequest $request, array $placed, int $day, MealKind $kind, int $remaining, array $excluded): ?Dish
+    {
+        $total = $request->totalMeals();
         $vegetarianMin = $request->vegetarianShare->min($total);
         $vegetarianMax = $request->vegetarianShare->max($total);
         $vegetarianTarget = $request->vegetarianShare->target($total);
         $hybridTarget = (int) round(self::HYBRID_SHARE * $total);
 
-        /** @var list<MenuMeal> $meals */
-        $meals = [];
-        /** @var list<MenuWarning> $warnings */
-        $warnings = [];
         /** @var array<int, true> $usedIds */
-        $usedIds = [];
-        /** @var array<int, int> $categoryOfDay catégorie du premier repas posé un jour donné */
-        $categoryOfDay = [];
+        $usedIds = array_fill_keys($excluded, true);
         $vegetarianCount = 0;
         $hybridCount = 0;
-
-        foreach ($slots as $index => [$day, $kind]) {
-            $remaining = $total - $index;
-
-            $candidates = array_values(array_filter(
-                $pool,
-                static fn (Dish $dish): bool => !isset($usedIds[$dish->id])
-                    && $dish->fits($kind)
-                    && ($vegetarianCount < $vegetarianMax || DishType::Vegetarian !== $dish->type),
-            ));
-
-            $mustBeVegetarian = $vegetarianMin - $vegetarianCount >= $remaining;
-            $wantsVegetarian = $this->coin($vegetarianTarget - $vegetarianCount, $remaining);
-            $wantsHybrid = $this->coin($hybridTarget - $hybridCount, $remaining);
-            $expectedLevel = Level::expectedOnDay($day);
-
-            // Du plus au moins important : le tirage relâche les derniers en premier.
-            $preferences = [];
-            if ($mustBeVegetarian) {
-                $preferences[] = static fn (Dish $dish): bool => DishType::Vegetarian === $dish->type;
-            }
-            $preferences[] = static fn (Dish $dish): bool => $dish->level === $expectedLevel;
-            $preferences[] = static fn (Dish $dish): bool => $wantsHybrid === (Season::Hybrid === $dish->season);
-            if (!$mustBeVegetarian) {
-                $preferences[] = static fn (Dish $dish): bool => $wantsVegetarian === (DishType::Vegetarian === $dish->type);
-            }
-            if (isset($categoryOfDay[$day])) {
-                $sameDayCategory = $categoryOfDay[$day];
-                $preferences[] = static fn (Dish $dish): bool => $dish->categoryId !== $sameDayCategory;
-            }
-
-            $dish = $this->draw($candidates, $preferences);
-            if (null === $dish) {
-                $warnings[] = new MenuWarning(
-                    WarningKind::MissingDish,
-                    sprintf(
-                        'La base ne contient aucun plat disponible pour le %s du %s.',
-                        $kind->label(),
-                        Weekday::label($day),
-                    ),
-                    $kind,
-                    $day,
-                );
-
-                continue;
-            }
-
-            $usedIds[$dish->id] = true;
-            $categoryOfDay[$day] ??= $dish->categoryId;
-            $vegetarianCount += DishType::Vegetarian === $dish->type ? 1 : 0;
-            $hybridCount += Season::Hybrid === $dish->season ? 1 : 0;
-            $meals[] = new MenuMeal($day, $kind, $dish);
-
-            if ($dish->level !== $expectedLevel) {
-                $warnings[] = new MenuWarning(
-                    WarningKind::LevelFallback,
-                    sprintf(
-                        'Pas assez de plats %s pour le %s du %s : un plat %s est proposé.',
-                        $expectedLevel->label(),
-                        $kind->label(),
-                        Weekday::label($day),
-                        $dish->level->label(),
-                    ),
-                    $kind,
-                    $day,
-                );
+        $sameDayCategory = null;
+        foreach ($placed as $meal) {
+            $usedIds[$meal->dish->id] = true;
+            $vegetarianCount += DishType::Vegetarian === $meal->dish->type ? 1 : 0;
+            $hybridCount += Season::Hybrid === $meal->dish->season ? 1 : 0;
+            if ($meal->day === $day) {
+                $sameDayCategory ??= $meal->dish->categoryId;
             }
         }
 
-        if ($vegetarianCount < $vegetarianMin) {
-            $warnings[] = new MenuWarning(
-                WarningKind::VegetarianShortfall,
-                sprintf(
-                    'La base ne contient pas assez de plats végétariens : %d sur %d repas au lieu de %d au moins.',
-                    $vegetarianCount,
-                    $total,
-                    $vegetarianMin,
-                ),
-            );
+        $candidates = array_values(array_filter(
+            $pool,
+            static fn (Dish $dish): bool => !isset($usedIds[$dish->id])
+                && $dish->fits($kind)
+                && ($vegetarianCount < $vegetarianMax || DishType::Vegetarian !== $dish->type),
+        ));
+
+        $mustBeVegetarian = $vegetarianMin - $vegetarianCount >= $remaining;
+        $wantsVegetarian = $this->coin($vegetarianTarget - $vegetarianCount, $remaining);
+        $wantsHybrid = $this->coin($hybridTarget - $hybridCount, $remaining);
+        $expectedLevel = Level::expectedOnDay($day);
+
+        // Du plus au moins important : le tirage relâche les derniers en premier.
+        $preferences = [];
+        if ($mustBeVegetarian) {
+            $preferences[] = static fn (Dish $dish): bool => DishType::Vegetarian === $dish->type;
+        }
+        $preferences[] = static fn (Dish $dish): bool => $dish->level === $expectedLevel;
+        $preferences[] = static fn (Dish $dish): bool => $wantsHybrid === (Season::Hybrid === $dish->season);
+        if (!$mustBeVegetarian) {
+            $preferences[] = static fn (Dish $dish): bool => $wantsVegetarian === (DishType::Vegetarian === $dish->type);
+        }
+        if (null !== $sameDayCategory) {
+            $preferences[] = static fn (Dish $dish): bool => $dish->categoryId !== $sameDayCategory;
         }
 
-        return new Menu($meals, $warnings);
-    }
-
-    /**
-     * Repas à composer, aux jours choisis, triés par jour puis déjeuner avant dîner.
-     *
-     * @return list<array{int, MealKind}>
-     */
-    private function slots(MenuRequest $request): array
-    {
-        $slots = [];
-        foreach ([MealKind::Lunch, MealKind::Dinner] as $kind) {
-            foreach ($request->daysFor($kind) as $day) {
-                $slots[] = [$day, $kind];
-            }
-        }
-
-        usort($slots, static fn (array $a, array $b): int => [$a[0], $a[1]->value] <=> [$b[0], $b[1]->value]);
-
-        return $slots;
+        return $this->draw($candidates, $preferences);
     }
 
     /**

@@ -57,12 +57,12 @@ Classes PHP pures dans `src/Menu/`, sans accès à la base ni au framework. Le g
 
 ## Jalon 4 : API de génération et écran menu
 
-- [ ] `POST /api/menu` : génère un menu
-- [ ] `POST /api/menu/regenerer` : régénère un repas, ou tout le menu, sans toucher aux autres repas
-- [ ] Choix libre d'un plat existant pour un repas, avec avertissement non bloquant si une règle n'est pas respectée
+- [x] `POST /api/menu` : génère un menu
+- [x] `POST /api/menu/regenerer` : régénère un repas, ou tout le menu, sans toucher aux autres repas
+- [x] Choix libre d'un plat existant pour un repas, avec avertissement non bloquant si une règle n'est pas respectée
 - [ ] Frontend : formulaire de réglages (cases à cocher des jours, pour les déjeuners et pour les dîners), planning sur 7 jours, listes déjeuner et dîner, actions « régénérer ce repas », « choisir un plat », « tout régénérer », affichage des avertissements
 - [ ] Menu conservé côté navigateur (rien n'est stocké côté serveur à ce stade)
-- [ ] Performance : génération en moins de 3 s avec 200 plats
+- [x] Performance : génération en moins de 3 s avec 200 plats
 
 ## Jalon 5 : Journal `proposition` et fraîcheur
 
@@ -72,6 +72,7 @@ Optionnel pour une livraison plus rapide, mais le PRD §5.4 demande la règle de
 - [ ] Une nouvelle validation remplace les lignes de la semaine concernée
 - [ ] Pénalité de fraîcheur dans le tirage (plat récent moins tiré, plat jamais proposé favorisé)
 - [ ] Purge des propositions de plus de 8 semaines
+- [ ] Bouton « Réinitialiser l'historique » (pour les tests, avant l'usage réel) : vide `proposition` seulement, plats et catégories intacts. Endpoint `DELETE /api/propositions` (204, 401 hors session), confirmation dans un `<dialog>` avec le focus sur « Annuler ». Dépôt `PropositionRepository::clear()`
 
 ## Jalon 6 : Finition et mise en production (o2switch)
 

@@ -94,6 +94,8 @@ La rétention de `proposition` est fixée à 8 semaines : les lignes plus ancien
 
 - **Moment d'écriture dans `proposition`** : à la validation du menu, via un bouton « Valider le menu ». Pas à chaque génération, pour ne pas enregistrer les suggestions rejetées. Une nouvelle validation remplace les lignes de la semaine concernée, pour que le journal corresponde toujours au dernier menu validé.
 
+- **Remise à zéro du journal** : un bouton « Réinitialiser l'historique » vide `proposition` sans toucher aux plats ni aux catégories. Il sert pendant les tests, pour que les propositions de test ne faussent pas la fraîcheur à l'usage réel. Il est livré avec le journal (jalon 5).
+
 ## Points à décider
 
 - **Force de la pénalité de fraîcheur** et **durée de rétention** (8 semaines proposé).

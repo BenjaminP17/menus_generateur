@@ -26,6 +26,9 @@ Authentification (jalon 1b, SEC-01) : un compte unique protège l'API, par sessi
 | GET | `/api/plats/{id}` | Lit un plat |
 | PUT | `/api/plats/{id}` | Modifie un plat (remplacement complet) |
 | DELETE | `/api/plats/{id}` | Supprime un plat |
+| POST | `/api/menu` | Génère un menu |
+| POST | `/api/menu/regenerer` | Change un repas du menu (ou tout le menu, sans `cible`) |
+| POST | `/api/menu/choisir` | Pose un plat choisi à la main sur un repas |
 
 `{id}` doit être un entier d'au plus 9 chiffres : un identifiant non numérique ou hors bornes est
 refusé par le routeur (404), proprement, sans révéler de détail serveur (SEC-02).
@@ -93,6 +96,72 @@ Les collections sont enveloppées, pour laisser la place à des métadonnées pl
 `GET /api/plats` renvoie la base entière, sans pagination ni filtre : le volume reste de quelques
 centaines de plats (PRD §7) et le tri ignore la casse et les accents.
 
+## Le menu
+
+Le serveur ne stocke aucun menu (ROADMAP, jalon 4) : le navigateur garde le menu en cours et le
+renvoie à chaque demande de modification. Les trois routes reçoivent les **réglages** et renvoient
+le **menu** complet.
+
+### Réglages (en entrée, les trois routes)
+
+| Champ | Type | Obligatoire | Règle |
+|---|---|---|---|
+| `jours_dejeuners` | liste de textes | oui | 1 à 7 jours distincts parmi `lundi` … `dimanche` |
+| `jours_diners` | liste de textes | oui | Idem, indépendante des déjeuners |
+| `vegetarien` | texte | non (défaut `quelques_uns`) | `aucun`, `quelques_uns` ou `majoritairement` |
+| `date_reference` | texte `AAAA-MM-JJ` | non (défaut : aujourd'hui) | Détermine la saison |
+
+Le menu contient exactement un déjeuner à chaque jour de déjeuner et un dîner à chaque jour de dîner.
+
+### Menu en cours (en entrée de `/regenerer` et `/choisir`)
+
+| Champ | Type | Règle |
+|---|---|---|
+| `repas` | liste d'objets | Les repas du menu en cours : `{"jour": "lundi", "repas": "dejeuner", "plat_id": 12}`. Optionnel (défaut : liste vide). Chaque repas doit tomber à un jour choisi dans les réglages, sans doublon. Un repas peut manquer (base insuffisante). `repas` vaut `dejeuner` ou `diner` |
+| `cible` | objet | Le repas à changer : `{"jour": "lundi", "repas": "dejeuner"}`. Obligatoire pour `/choisir`, optionnel pour `/regenerer` |
+| `plat_id` | entier | Le plat choisi. Obligatoire pour `/choisir`, ignoré ailleurs |
+
+Un plat de `repas` supprimé entre-temps (PRD §5.1) n'est pas une erreur : le repas est traité comme
+absent, et un avertissement `plat_manquant` le signale dans le menu renvoyé.
+
+### Menu (en sortie)
+
+```json
+{
+  "menu": {
+    "repas": [
+      { "jour": "lundi", "repas": "dejeuner", "plat": { "id": 12, "nom": "Gratin de courgettes", "…": "…" } }
+    ],
+    "avertissements": [
+      { "type": "niveau_de_repli", "message": "Le déjeuner du samedi est un plat rapide, alors qu'un plat élaboré est attendu ce jour-là.", "jour": "samedi", "repas": "dejeuner" },
+      { "type": "vegetarien_insuffisant", "message": "Le menu compte 3 repas végétariens sur 14, au lieu de 8 au moins." }
+    ],
+    "complet": true
+  }
+}
+```
+
+- `repas` est trié par jour, déjeuner avant dîner ; `plat` a la forme d'un plat (voir plus haut).
+- `complet` vaut `false` si au moins un repas n'a pas pu être composé (avertissement `plat_manquant`).
+- `jour` et `repas` n'apparaissent dans un avertissement que s'il concerne un repas précis.
+- Les messages sont destinés à l'utilisateur et affichables tels quels.
+
+Types d'avertissement : `plat_manquant`, `niveau_de_repli` (le niveau du jour, rapide en semaine et
+élaboré le week-end, n'est pas respecté), `vegetarien_insuffisant`, `vegetarien_excessif`,
+`plat_en_double`, `hors_saison`, `repas_non_autorise`. Le générateur ne produit que les trois
+premiers ; les autres ne viennent que d'un choix libre. Les avertissements sont recalculés sur le
+menu entier à chaque réponse.
+
+### Les routes
+
+- `POST /api/menu` : compose un menu à partir des réglages. Les corps de `repas`, `cible` et `plat_id`
+  sont ignorés. Avec une base vide, la réponse est un 200 sans repas, avec un `plat_manquant` par repas.
+- `POST /api/menu/regenerer` : avec `cible`, tire un autre plat pour ce repas, qui respecte les règles
+  vis-à-vis des autres repas du menu, et laisse tous les autres repas tels quels (409 s'il n'existe
+  aucun autre plat qui convienne). Sans `cible`, compose un nouveau menu complet.
+- `POST /api/menu/choisir` : pose `plat_id` sur `cible`. Le choix est libre : une règle non respectée
+  donne un avertissement, jamais un refus. 422 avec `champs.plat_id` si le plat n'existe pas.
+
 ## Erreurs
 
 Toutes les erreurs métier ont la même forme. `erreur` est toujours présent et peut être affiché
@@ -121,6 +190,7 @@ ni le déjeuner ni le dîner n'est autorisé. L'interface l'affiche à côté de
 | Pas de session active (sauf `/api/health` et `/api/session`) | 401 |
 | Plat introuvable | 404 |
 | Un plat porte déjà ce nom | 409, avec `champs.nom` |
+| Aucun autre plat ne convient pour le repas à changer (`/api/menu/regenerer`) | 409 |
 | Validation en échec, ou catégorie principale inconnue | 422, avec `champs` |
 | Identifiant ou mot de passe incorrect | 401 |
 | Trop de tentatives de connexion | 429 |
