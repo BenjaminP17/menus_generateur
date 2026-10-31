@@ -10,12 +10,12 @@ Chaque semaine, composer les repas (déjeuner et dîner) demande du temps et tou
 
 ## 2. Utilisateurs et cas d'usage
 
-**Utilisateur** : un foyer, seul utilisateur de l'application. Il n'y a pas de comptes ni de gestion de plusieurs profils.
+**Utilisateur** : un foyer, seul utilisateur de l'application. Il n'y a ni gestion de plusieurs profils, ni inscription : un compte unique protège l'accès (voir §6).
 
 Cas d'usage principaux :
 
 - **Alimenter la base de plats** : l'utilisateur ajoute, modifie et supprime des plats, avec leurs caractéristiques (saison, type, rapide ou élaboré, végétarien ou non).
-- **Générer un menu de la semaine** : l'utilisateur indique combien d'idées il veut pour le déjeuner et pour le dîner, et reçoit un menu sur sept jours.
+- **Générer un menu de la semaine** : l'utilisateur choisit les jours où il veut une idée de déjeuner et ceux où il veut une idée de dîner, et reçoit un menu sur sept jours.
 - **Avoir des idées de saison** : le menu privilégie les plats de la saison en cours.
 - **Adapter le temps de cuisine au jour** : plats rapides en semaine, plats élaborés le week-end.
 - **Varier les types de repas** : proposer des repas végétariens selon le réglage choisi.
@@ -29,7 +29,7 @@ Cas d'usage principaux :
 | Respecter la saison | Au moins 80 % des plats d'un menu appartiennent à la saison en cours ou sont hybrides |
 | Distinguer semaine et week-end | Au moins 90 % des dîners et déjeuners de semaine sont des plats rapides, et au moins 90 % de ceux du week-end sont des plats élaborés, quand la base le permet |
 | Éviter la répétition | Aucun plat identique dans une même semaine |
-| Donner le nombre d'idées demandé | 100 % des menus contiennent exactement le nombre de déjeuners et de dîners demandé |
+| Donner les idées demandées | 100 % des menus contiennent exactement un déjeuner à chaque jour de déjeuner choisi et un dîner à chaque jour de dîner choisi |
 | Base suffisante | L'application indique, pour chaque catégorie, si la base contient assez de plats pour une semaine complète |
 
 ## 4. Périmètre
@@ -38,7 +38,7 @@ Cas d'usage principaux :
 
 - Application web, utilisée par un seul foyer.
 - Gestion de la base de plats : ajout, modification, suppression.
-- Saisie du nombre d'idées pour le déjeuner et pour le dîner.
+- Choix des jours de déjeuner et des jours de dîner.
 - Génération d'un menu sur sept jours (lundi à dimanche).
 - Prise en compte automatique de la saison, déduite de la date du jour (hémisphère nord).
 - Réglage de la part de repas végétariens.
@@ -72,21 +72,21 @@ Cas d'usage principaux :
 | Niveau | Choix : rapide, élaboré | Oui | Défini manuellement par l'utilisateur |
 
 - L'utilisateur peut ajouter, modifier et supprimer un plat.
-- La suppression d'un plat présent dans un menu en cours ne modifie pas le menu déjà affiché (à valider).
+- La suppression d'un plat est libre et sans condition. Elle ne modifie pas le menu déjà affiché : aucun menu n'est stocké côté serveur. L'historique du plat dans le journal des propositions est effacé en même temps que lui.
 
 ### 5.2 Entrées du générateur
 
 | Champ | Type | Obligatoire | Règle |
 |---|---|---|---|
-| Nombre d'idées de déjeuner | Entier | Oui | Entre 1 et 7 |
-| Nombre d'idées de dîner | Entier | Oui | Entre 1 et 7 |
+| Jours de déjeuner | Liste de jours (lundi à dimanche) | Oui | De 1 à 7 jours distincts ; le nombre de déjeuners du menu en découle |
+| Jours de dîner | Liste de jours (lundi à dimanche) | Oui | De 1 à 7 jours distincts ; choisis indépendamment des jours de déjeuner |
 | Proportion de repas végétariens | Choix : aucun / quelques-uns / majoritairement | Non | Par défaut : « quelques-uns », soit un repas végétarien au maximum par semaine. « Majoritairement » signifie plus de la moitié des repas du menu, soit au moins 8 repas sur 14 |
 | Date de référence | Date | Non | Par défaut : date du jour ; sert à déterminer la saison |
 
 ### 5.3 Sorties
 
-- Une liste d'idées de déjeuner et une liste d'idées de dîner, de la taille demandée.
-- Un planning sur sept jours associant à chaque jour un déjeuner et un dîner.
+- Une liste d'idées de déjeuner et une liste d'idées de dîner, avec un repas par jour choisi.
+- Un planning sur sept jours associant un déjeuner et un dîner aux jours choisis.
 - Pour chaque repas : nom, saison, type, niveau (rapide ou élaboré).
 - Un message explicite si la base ne permet pas de remplir le menu demandé.
 
@@ -132,7 +132,7 @@ Cas d'usage principaux :
 - **Plateforme** : application web, utilisable sur ordinateur et sur téléphone.
 - **Performance** : génération d'un menu en moins de 3 secondes avec une base de 200 plats.
 - **Accessibilité** : interface utilisable au clavier, conformité WCAG 2.1 niveau AA.
-- **Confidentialité** : pas de compte, pas de donnée personnelle obligatoire. La base de plats est stockée sur un hébergement privé (o2switch).
+- **Confidentialité** : accès protégé par un compte unique (identifiant et mot de passe, pas d'inscription ni de gestion de plusieurs profils), pas de donnée personnelle obligatoire. La base de plats est stockée sur un hébergement privé (o2switch).
 - **Fiabilité** : le menu généré respecte les règles de la section 5.4. Si la base est insuffisante, l'application l'indique plutôt que de violer une règle.
 
 ## 7. Hypothèses, contraintes et questions ouvertes
@@ -140,7 +140,7 @@ Cas d'usage principaux :
 ### Décisions validées
 
 - Plateforme : application web.
-- Utilisateur : un seul foyer, sans compte.
+- Utilisateur : un seul foyer, protégé par un compte unique (identifiant et mot de passe configurés hors dépôt, pas d'inscription, pas de gestion de plusieurs profils).
 - Source des plats : saisie manuelle par l'utilisateur, pas de génération par IA.
 - Pas d'enregistrement de menus.
 - Pas de gestion du nombre de personnes.
@@ -148,16 +148,17 @@ Cas d'usage principaux :
 - Saisons regroupées en deux ensembles : printemps-été et automne-hiver.
 - Jours de fête non pris en compte.
 - Le caractère « rapide » ou « élaboré » est défini par l'utilisateur pour chaque plat, et non calculé à partir d'un temps de préparation.
+- Suppression d'un plat : libre et sans condition, même si le plat figure dans un menu affiché (§5.1).
 
 ### Hypothèses
 
 - L'application est utilisée en France (saisons de l'hémisphère nord, cuisine francophone).
-- Le nombre de déjeuners et de dîners est indépendant : l'utilisateur peut demander plus de dîners que de déjeuners.
+- Les jours de déjeuner et les jours de dîner sont indépendants : l'utilisateur peut demander plus de dîners que de déjeuners, ou des repas à des jours différents.
 - Le volume de la base reste modeste (quelques centaines de plats au maximum).
 
 ### Décisions sur les questions ouvertes
 
-1. **Sens de « nombre d'idées »** : nombre de plats distincts pour chaque type de repas (déjeuners et dîners), pas un total de repas.
+1. **Sens de « idées » demandées** : un plat distinct par repas choisi, pour chaque type de repas (déjeuners et dîners), pas un total de repas. L'utilisateur ne saisit plus un nombre : il choisit les jours, séparément pour les déjeuners et les dîners, et le nombre en découle.
 2. **Période** : menu fixe sur sept jours.
 3. **Hybrides** : conservés comme catégorie à part entière.
 4. **Saison opposée** : plats exclus du menu.

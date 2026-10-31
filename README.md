@@ -37,6 +37,20 @@ php -S localhost:8000 -t public
 
 Vérifier que l'API répond : `http://localhost:8000/api/health` renvoie `{"status":"ok"}`.
 
+## API
+
+| Méthode | Chemin | Description |
+|---|---|---|
+| GET | `/api/health` | État de l'API et de la base |
+| GET | `/api/categories` | Catégories principales |
+| GET | `/api/plats` | Liste des plats |
+| POST | `/api/plats` | Création d'un plat |
+| GET | `/api/plats/{id}` | Lecture d'un plat |
+| PUT | `/api/plats/{id}` | Modification d'un plat |
+| DELETE | `/api/plats/{id}` | Suppression d'un plat |
+
+Le contrat complet (champs, codes de réponse, format d'erreur) est dans [doc/api.md](doc/api.md).
+
 ## Tests
 
 ```bash
@@ -51,3 +65,4 @@ vendor/bin/php-cs-fixer fix --dry-run
 - [CLAUDE.md](CLAUDE.md) : conventions de travail sur le dépôt
 - [ROADMAP.md](ROADMAP.md) : jalons de développement vers la V1
 - [doc/modelisation-bdd.md](doc/modelisation-bdd.md) : modèle de données (tables, contraintes, DDL SQLite)
+- [doc/api.md](doc/api.md) : contrat de l'API JSON

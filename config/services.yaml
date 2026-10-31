@@ -13,6 +13,10 @@ services:
     _defaults:
         autowire: true      # Automatically injects dependencies in your services.
         autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
+        bind:
+            # Limiteur de tentatives de connexion (config/packages/rate_limiter.yaml), injecté par
+            # nom d'argument dans App\Controller\SessionController.
+            $connexionLimiter: '@limiter.connexion'
 
     # makes classes in src/ available to be used as services
     # this creates a service per class whose id is the fully-qualified class name
@@ -29,5 +33,30 @@ services:
         arguments:
             $schemaPath: '%kernel.project_dir%/config/schema.sql'
 
+    # Identifiants du compte unique (jalon 1b), configurés hors dépôt dans .env.local.
+    App\Security\Credentials:
+        arguments:
+            $identifiant: '%env(APP_AUTH_USER)%'
+            $passwordHash: '%env(APP_AUTH_PASSWORD_HASH)%'
+
+    # Connexion PDO injectée dans les dépôts de src/Database/, pour qu'ils puissent aussi
+    # travailler sur une base en mémoire dans les tests. La connexion reste paresseuse.
+    PDO:
+        class: PDO
+        factory: ['@App\Database\Database', 'connection']
+
+    # Tirage aléatoire du générateur de menus (moteur sécurisé par défaut) ; les tests injectent
+    # un Randomizer amorcé par une graine.
+    Random\Randomizer: ~
+
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
+
+when@test:
+    services:
+        # Base SQLite dédiée aux tests fonctionnels qui démarrent le kernel (jalon 1b) : jamais
+        # le fichier de développement. Effacée et réinstallée à chaque test, voir
+        # tests/Support/FunctionalTestCase.php.
+        App\Database\Database:
+            arguments:
+                $path: '%kernel.project_dir%/var/data/menus.test.sqlite'
