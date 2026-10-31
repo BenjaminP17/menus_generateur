@@ -8,6 +8,7 @@ use App\Menu\MenuEditResult;
 use App\Menu\MenuEditValidator;
 use App\Menu\MenuPlacement;
 use App\Menu\MenuRequest;
+use App\Menu\ProposalOrigin;
 use App\Menu\VegetarianShare;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
@@ -16,6 +17,7 @@ use PHPUnit\Framework\TestCase;
 #[CoversClass(MenuEditResult::class)]
 #[CoversClass(MenuEdit::class)]
 #[CoversClass(MenuPlacement::class)]
+#[CoversClass(ProposalOrigin::class)]
 final class MenuEditValidatorTest extends TestCase
 {
     public function testReadsTheMealsTheTargetAndTheChosenDish(): void
@@ -87,6 +89,32 @@ final class MenuEditValidatorTest extends TestCase
 
         foreach ($malformed as $label => $meals) {
             $this->assertSame(['repas'], array_keys($this->validate(['repas' => $meals], false, false)->errors()), $label);
+        }
+    }
+
+    public function testReadsTheOriginOfEachMeal(): void
+    {
+        $result = $this->validate(['repas' => [
+            ['jour' => 'lundi', 'repas' => 'dejeuner', 'plat_id' => 1],
+            ['jour' => 'samedi', 'repas' => 'dejeuner', 'plat_id' => 2, 'origine' => 'choix_libre'],
+            ['jour' => 'samedi', 'repas' => 'diner', 'plat_id' => 3, 'origine' => 'suggestion'],
+        ]], false, false);
+
+        $this->assertTrue($result->isValid());
+        $this->assertSame(
+            [ProposalOrigin::Suggestion, ProposalOrigin::FreeChoice, ProposalOrigin::Suggestion],
+            array_map(static fn (MenuPlacement $placement): ProposalOrigin => $placement->origin, $result->edit()->placements),
+        );
+    }
+
+    public function testRejectsAnUnknownOrigin(): void
+    {
+        foreach (['inconnue', 3, true] as $origin) {
+            $result = $this->validate(['repas' => [
+                ['jour' => 'lundi', 'repas' => 'dejeuner', 'plat_id' => 1, 'origine' => $origin],
+            ]], false, false);
+
+            $this->assertSame(['repas'], array_keys($result->errors()), var_export($origin, true));
         }
     }
 

@@ -20,8 +20,8 @@ use Random\Randomizer;
  * du même jour.
  *
  * Les repas tombent aux jours choisis par l'utilisateur, séparément pour les déjeuners et les
- * dîners. Le facteur de fraîcheur arrive avec le journal des propositions (ROADMAP, jalon 5) :
- * ici le tirage ne dépend que de `poids`.
+ * dîners. Le tirage est pondéré par `poids` et par la fraîcheur du plat (Freshness, lue dans le
+ * journal des propositions) ; sans historique, il ne dépend que de `poids`.
  *
  * Aucun menu n'est conservé : pour changer un repas (`regenerate`, `place`), l'appelant redonne
  * le menu en cours, et les autres repas restent tels quels.
@@ -39,10 +39,12 @@ final class MenuGenerator
     }
 
     /**
-     * @param list<Dish> $dishes
+     * @param list<Dish>     $dishes
+     * @param Freshness|null $freshness fraîcheur des plats d'après le journal ; null : sans historique
      */
-    public function generate(array $dishes, MenuRequest $request): Menu
+    public function generate(array $dishes, MenuRequest $request, ?Freshness $freshness = null): Menu
     {
+        $freshness ??= Freshness::none();
         $pool = $this->seasonalPool($dishes, $request);
         $slots = $request->slots();
         $total = count($slots);
@@ -50,7 +52,7 @@ final class MenuGenerator
         /** @var list<MenuMeal> $meals */
         $meals = [];
         foreach ($slots as $index => [$day, $kind]) {
-            $dish = $this->pick($pool, $request, $meals, $day, $kind, $total - $index, []);
+            $dish = $this->pick($pool, $request, $meals, $day, $kind, $total - $index, [], $freshness);
             if (null !== $dish) {
                 $meals[] = new MenuMeal($day, $kind, $dish);
             }
@@ -65,11 +67,12 @@ final class MenuGenerator
      * du menu, et diffère du plat actuel.
      *
      * @param list<Dish>     $dishes
-     * @param list<MenuMeal> $meals  menu en cours
+     * @param list<MenuMeal> $meals     menu en cours
+     * @param Freshness|null $freshness fraîcheur des plats d'après le journal ; null : sans historique
      *
      * @return Menu|null le menu avec le repas changé, ou null si aucun autre plat ne convient
      */
-    public function regenerate(array $dishes, MenuRequest $request, array $meals, int $day, MealKind $kind): ?Menu
+    public function regenerate(array $dishes, MenuRequest $request, array $meals, int $day, MealKind $kind, ?Freshness $freshness = null): ?Menu
     {
         $others = $this->withoutSlot($meals, $day, $kind);
         $current = array_map(
@@ -77,7 +80,7 @@ final class MenuGenerator
             array_values(array_filter($meals, static fn (MenuMeal $meal): bool => $meal->day === $day && $meal->kind === $kind)),
         );
 
-        $dish = $this->pick($this->seasonalPool($dishes, $request), $request, $others, $day, $kind, 1, $current);
+        $dish = $this->pick($this->seasonalPool($dishes, $request), $request, $others, $day, $kind, 1, $current, $freshness ?? Freshness::none());
         if (null === $dish) {
             return null;
         }
@@ -136,7 +139,7 @@ final class MenuGenerator
      * @param int            $remaining repas restant à placer, celui-ci compris
      * @param list<int>      $excluded  plats à écarter en plus de ceux déjà posés
      */
-    private function pick(array $pool, MenuRequest $request, array $placed, int $day, MealKind $kind, int $remaining, array $excluded): ?Dish
+    private function pick(array $pool, MenuRequest $request, array $placed, int $day, MealKind $kind, int $remaining, array $excluded, Freshness $freshness): ?Dish
     {
         $total = $request->totalMeals();
         $vegetarianMin = $request->vegetarianShare->min($total);
@@ -184,7 +187,7 @@ final class MenuGenerator
             $preferences[] = static fn (Dish $dish): bool => $dish->categoryId !== $sameDayCategory;
         }
 
-        return $this->draw($candidates, $preferences);
+        return $this->draw($candidates, $preferences, $freshness);
     }
 
     /**
@@ -201,14 +204,14 @@ final class MenuGenerator
     }
 
     /**
-     * Tire un plat pondéré par `poids` parmi les candidats, après avoir restreint la liste par
+     * Tire un plat pondéré par `poids` et par sa fraîcheur parmi les candidats, après avoir restreint la liste par
      * chaque préférence dans l'ordre d'importance : une préférence qui ne laisserait aucun
      * candidat est ignorée, et les suivantes s'appliquent quand même.
      *
      * @param list<Dish>                 $candidates
      * @param list<callable(Dish): bool> $preferences de la plus à la moins importante
      */
-    private function draw(array $candidates, array $preferences): ?Dish
+    private function draw(array $candidates, array $preferences, Freshness $freshness): ?Dish
     {
         if ([] === $candidates) {
             return null;
@@ -221,19 +224,19 @@ final class MenuGenerator
             }
         }
 
-        return $this->weightedPick($candidates);
+        return $this->weightedPick($candidates, $freshness);
     }
 
     /**
      * @param non-empty-list<Dish> $dishes
      */
-    private function weightedPick(array $dishes): Dish
+    private function weightedPick(array $dishes, Freshness $freshness): Dish
     {
-        $sum = array_sum(array_map(static fn (Dish $dish): int => $dish->weight, $dishes));
+        $sum = array_sum(array_map(static fn (Dish $dish): int => $freshness->weight($dish), $dishes));
         $roll = $this->randomizer->getInt(1, $sum);
 
         foreach ($dishes as $dish) {
-            $roll -= $dish->weight;
+            $roll -= $freshness->weight($dish);
             if ($roll <= 0) {
                 return $dish;
             }

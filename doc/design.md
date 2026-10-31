@@ -154,7 +154,9 @@ Le point de rupture entre téléphone et ordinateur est à 48 rem (768 px). Le C
 - Réglages repliables une fois le menu généré, pour laisser la place au planning.
 - Réglages : deux rangées de cases à cocher, une pour les jours de déjeuner et une pour les jours de dîner (lundi à dimanche, au moins un jour chacune), puis la proportion de repas végétariens. Dans la grille, un jour sans repas choisi n'affiche pas de ligne pour ce repas.
 - Sur ordinateur, les jours passent en grille de cartes (plusieurs colonnes de 15 rem au moins), qui garde chaque nom de plat lisible. Un tableau à sept colonnes était trop étroit.
-- Actions par repas : « Changer » (nouvelle suggestion), « Choisir un plat » (choix libre d'un plat existant, dans une fenêtre modale avec recherche par nom). Action globale : « Tout régénérer ».
+- Actions par repas : « Changer » (nouvelle suggestion), « Choisir un plat » (choix libre d'un plat existant, dans une fenêtre modale avec recherche par nom). Actions globales : « Tout régénérer » et « Valider le menu » (action principale, qui enregistre le menu dans le journal des propositions).
+- Après validation, un bandeau de succès « Menu validé pour la semaine du 26 octobre. » s'affiche au-dessus du planning ; il disparaît dès que le menu change.
+- Tout en bas de l'écran, une section « Historique » avec le bouton secondaire « Réinitialiser l'historique », qui ouvre une confirmation modale (`<dialog>`, focus sur « Annuler ») avant de vider le journal. Les plats ne sont pas touchés.
 - Base vide : l'illustration d'écran vide, le texte « Ta base est vide. Ajoute quelques plats pour que je puisse composer ton menu. » et un bouton vers « Mes plats ».
 - Avertissements : un bandeau en haut du menu résume les écarts (base insuffisante, niveau de repli, choix libre hors règles). Chaque repas concerné porte en plus une pastille « À vérifier ».
 
@@ -188,6 +190,7 @@ Le point de rupture entre téléphone et ordinateur est à 48 rem (768 px). Le C
 | Pastille | Icône SVG et texte, coins arrondis, couleurs du §2 |
 | Carte de repas | Jour, repas (déjeuner ou dîner), nom du plat, pastilles, actions « Changer » et « Choisir » ; pastille « À vérifier » en cas d'écart |
 | Bandeau d'avertissement | Fond `--alerte-fond`, bordure `--alerte-bord`, icône, texte `--alerte-texte`, `role="status"` |
+| Bandeau de succès | Fond `--vegetarien-fond`, bordure et texte `--vegetarien-texte` (contraste déjà vérifié pour la pastille), icône de coche, `role="status"` |
 | Bouton principal | Fond `--terracotta`, texte blanc, rayon arrondi, 44 px de haut au minimum |
 | Bouton secondaire | Fond transparent, bordure `--terracotta`, texte `--terracotta` |
 | Bouton destructif | Fond `--danger`, texte blanc ; toujours précédé d'une confirmation |
@@ -225,6 +228,11 @@ Exigence du PRD §6 : interface utilisable au clavier, conforme WCAG 2.1 niveau 
 | Titre du menu | Ton menu de la semaine |
 | Bouton de génération | Générer le menu |
 | Régénération globale | Tout régénérer |
+| Validation du menu | Valider le menu |
+| Succès de validation | Menu validé pour la semaine du 26 octobre. |
+| Réinitialisation de l'historique | Réinitialiser l'historique |
+| Confirmation de réinitialisation | Réinitialiser l'historique ? Cette action est définitive. |
+| Succès de réinitialisation | Historique réinitialisé. |
 | Régénération d'un repas | Changer |
 | Choix libre | Choisir un plat |
 | Base vide (menu) | Ta base est vide. Ajoute quelques plats pour que je puisse composer ton menu. |

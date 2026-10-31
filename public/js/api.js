@@ -73,11 +73,17 @@ export const api = {
     modifierPlat: (id, plat) => requete('PUT', `/api/plats/${encodeURIComponent(id)}`, plat),
     supprimerPlat: (id) => requete('DELETE', `/api/plats/${encodeURIComponent(id)}`),
 
-    // Le menu n'est pas stocké côté serveur : chaque appel renvoie les réglages et le menu en
-    // cours (`repas` : [{ jour, repas, plat_id }]) et reçoit le menu complet.
+    // Le menu en cours n'est pas stocké côté serveur : chaque appel renvoie les réglages et le
+    // menu en cours (`repas` : [{ jour, repas, plat_id, origine }]) et reçoit le menu complet.
     genererMenu: async (reglages) => (await requete('POST', '/api/menu', reglages)).menu,
     regenererRepas: async (reglages, repas, cible) =>
         (await requete('POST', '/api/menu/regenerer', { ...reglages, repas, cible })).menu,
     choisirPlat: async (reglages, repas, cible, platId) =>
         (await requete('POST', '/api/menu/choisir', { ...reglages, repas, cible, plat_id: platId })).menu,
+
+    // Journal des propositions : la validation enregistre le menu en cours (`repas` :
+    // [{ jour, repas, plat_id, origine }]) pour varier les menus suivants ; renvoie `{ semaine,
+    // repas_enregistres }`. La réinitialisation vide le journal, sans toucher aux plats.
+    validerMenu: (reglages, repas) => requete('POST', '/api/menu/valider', { ...reglages, repas }),
+    reinitialiserHistorique: () => requete('DELETE', '/api/propositions'),
 };

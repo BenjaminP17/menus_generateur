@@ -4,10 +4,12 @@ namespace App\Tests\Controller;
 
 use App\Controller\MenuController;
 use App\Controller\MenuPayload;
+use App\Database\Database;
 use App\Database\DishRepository;
 use App\Menu\DishType;
 use App\Menu\Level;
 use App\Menu\Season;
+use App\Menu\Week;
 use App\Tests\Support\DishFactory;
 use App\Tests\Support\FunctionalTestCase;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -20,7 +22,7 @@ final class MenuControllerTest extends FunctionalTestCase
 
     public function testEveryRouteRequiresASession(): void
     {
-        foreach (['/api/menu', '/api/menu/regenerer', '/api/menu/choisir'] as $path) {
+        foreach (['/api/menu', '/api/menu/regenerer', '/api/menu/choisir', '/api/menu/valider'] as $path) {
             $this->post($path, []);
 
             self::assertSame(401, $this->client->getResponse()->getStatusCode(), $path);
@@ -255,6 +257,118 @@ final class MenuControllerTest extends FunctionalTestCase
         ]);
         self::assertSame(422, $this->client->getResponse()->getStatusCode());
         self::assertSame('Plat introuvable.', $this->responseBody()['champs']['plat_id']);
+    }
+
+    public function testValidatingStoresTheMealsOfTheWeekInTheJournal(): void
+    {
+        $this->login();
+        $first = $this->createDish('Plat A');
+        $second = $this->createDish('Plat B');
+
+        $this->post('/api/menu/valider', $this->recent($this->settings(['lundi'], ['dimanche'])) + [
+            'repas' => [
+                ['jour' => 'lundi', 'repas' => 'dejeuner', 'plat_id' => $first],
+                ['jour' => 'dimanche', 'repas' => 'diner', 'plat_id' => $second, 'origine' => 'choix_libre'],
+            ],
+        ]);
+
+        self::assertSame(200, $this->client->getResponse()->getStatusCode());
+        $monday = Week::mondayOf(new \DateTimeImmutable('today'))->format('Y-m-d');
+        self::assertSame(['semaine' => $monday, 'repas_enregistres' => 2], $this->responseBody());
+        self::assertSame([
+            ['plat_id' => $first, 'date_menu' => $monday, 'jour' => 1, 'repas' => 'dejeuner', 'origine' => 'suggestion'],
+            ['plat_id' => $second, 'date_menu' => $monday, 'jour' => 7, 'repas' => 'diner', 'origine' => 'choix_libre'],
+        ], $this->journal());
+    }
+
+    public function testValidatingAgainReplacesTheWeek(): void
+    {
+        $this->login();
+        $first = $this->createDish('Plat A');
+        $second = $this->createDish('Plat B');
+        $settings = $this->recent($this->settings(['lundi'], ['mardi']));
+
+        $this->post('/api/menu/valider', $settings + ['repas' => [
+            ['jour' => 'lundi', 'repas' => 'dejeuner', 'plat_id' => $first],
+            ['jour' => 'mardi', 'repas' => 'diner', 'plat_id' => $second],
+        ]]);
+        $this->post('/api/menu/valider', $settings + ['repas' => [
+            ['jour' => 'mardi', 'repas' => 'diner', 'plat_id' => $first],
+        ]]);
+
+        self::assertSame(200, $this->client->getResponse()->getStatusCode());
+        self::assertSame([$first], array_column($this->journal(), 'plat_id'));
+    }
+
+    public function testValidatingRefusesAnEmptyMenuOrAMissingDish(): void
+    {
+        $this->login();
+        $settings = $this->settings(['lundi'], ['mardi']);
+
+        $this->post('/api/menu/valider', $settings + ['repas' => []]);
+        self::assertSame(422, $this->client->getResponse()->getStatusCode());
+        self::assertSame(['repas'], array_keys($this->responseBody()['champs']));
+
+        $this->post('/api/menu/valider', $settings + ['repas' => [
+            ['jour' => 'lundi', 'repas' => 'dejeuner', 'plat_id' => 999999],
+        ]]);
+        self::assertSame(422, $this->client->getResponse()->getStatusCode());
+        self::assertSame(['repas'], array_keys($this->responseBody()['champs']));
+        self::assertSame([], $this->journal());
+    }
+
+    public function testValidatingRefusesAnUnknownOrigin(): void
+    {
+        $this->login();
+        $dish = $this->createDish('Plat A');
+
+        $this->post('/api/menu/valider', $this->settings(['lundi'], ['mardi']) + ['repas' => [
+            ['jour' => 'lundi', 'repas' => 'dejeuner', 'plat_id' => $dish, 'origine' => 'au_hasard'],
+        ]]);
+
+        self::assertSame(422, $this->client->getResponse()->getStatusCode());
+        self::assertSame(['repas'], array_keys($this->responseBody()['champs']));
+    }
+
+    public function testGenerationStillWorksOnceTheJournalHoldsHistory(): void
+    {
+        $this->login();
+        $this->seed(30);
+        $settings = $this->settings(['lundi', 'mardi'], ['lundi', 'mardi']);
+        $this->post('/api/menu', $settings);
+        $this->post('/api/menu/valider', $settings + ['repas' => $this->placements($this->menu()['repas'])]);
+        $past = ['date_reference' => '2026-07-21'] + $settings;
+
+        $this->post('/api/menu', $past);
+
+        self::assertSame(200, $this->client->getResponse()->getStatusCode());
+        self::assertCount(4, $this->menu()['repas']);
+    }
+
+    /**
+     * Réglages datés d'aujourd'hui : le journal purge les semaines de plus de 8 semaines, comptées
+     * d'après l'horloge réelle.
+     *
+     * @param array<string, mixed> $settings
+     *
+     * @return array<string, mixed>
+     */
+    private function recent(array $settings): array
+    {
+        return ['date_reference' => date('Y-m-d')] + $settings;
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    private function journal(): array
+    {
+        /** @var list<array<string, mixed>> $rows */
+        $rows = static::getContainer()->get(Database::class)->connection()
+            ->query('SELECT plat_id, date_menu, jour, repas, origine FROM proposition ORDER BY date_menu, jour, repas')
+            ->fetchAll();
+
+        return $rows;
     }
 
     /**

@@ -29,6 +29,8 @@ Authentification (jalon 1b, SEC-01) : un compte unique protège l'API, par sessi
 | POST | `/api/menu` | Génère un menu |
 | POST | `/api/menu/regenerer` | Change un repas du menu (ou tout le menu, sans `cible`) |
 | POST | `/api/menu/choisir` | Pose un plat choisi à la main sur un repas |
+| POST | `/api/menu/valider` | Enregistre le menu en cours dans le journal des propositions |
+| DELETE | `/api/propositions` | Vide le journal des propositions (plats et catégories intacts) |
 
 `{id}` doit être un entier d'au plus 9 chiffres : un identifiant non numérique ou hors bornes est
 refusé par le routeur (404), proprement, sans révéler de détail serveur (SEC-02).
@@ -99,25 +101,26 @@ centaines de plats (PRD §7) et le tri ignore la casse et les accents.
 ## Le menu
 
 Le serveur ne stocke aucun menu (ROADMAP, jalon 4) : le navigateur garde le menu en cours et le
-renvoie à chaque demande de modification. Les trois routes reçoivent les **réglages** et renvoient
-le **menu** complet.
+renvoie à chaque demande de modification. Les trois routes de génération reçoivent les **réglages**
+et renvoient le **menu** complet. Seule la validation (`/api/menu/valider`) écrit côté serveur, dans
+le journal des propositions, qui sert à la règle de fraîcheur du tirage.
 
-### Réglages (en entrée, les trois routes)
+### Réglages (en entrée, les trois routes de génération et `/valider`)
 
 | Champ | Type | Obligatoire | Règle |
 |---|---|---|---|
 | `jours_dejeuners` | liste de textes | oui | 1 à 7 jours distincts parmi `lundi` … `dimanche` |
 | `jours_diners` | liste de textes | oui | Idem, indépendante des déjeuners |
 | `vegetarien` | texte | non (défaut `quelques_uns`) | `aucun`, `quelques_uns` ou `majoritairement` |
-| `date_reference` | texte `AAAA-MM-JJ` | non (défaut : aujourd'hui) | Détermine la saison |
+| `date_reference` | texte `AAAA-MM-JJ` | non (défaut : aujourd'hui) | Détermine la saison, et la semaine du menu (celle qui contient cette date, repérée par son lundi) |
 
 Le menu contient exactement un déjeuner à chaque jour de déjeuner et un dîner à chaque jour de dîner.
 
-### Menu en cours (en entrée de `/regenerer` et `/choisir`)
+### Menu en cours (en entrée de `/regenerer`, `/choisir` et `/valider`)
 
 | Champ | Type | Règle |
 |---|---|---|
-| `repas` | liste d'objets | Les repas du menu en cours : `{"jour": "lundi", "repas": "dejeuner", "plat_id": 12}`. Optionnel (défaut : liste vide). Chaque repas doit tomber à un jour choisi dans les réglages, sans doublon. Un repas peut manquer (base insuffisante). `repas` vaut `dejeuner` ou `diner` |
+| `repas` | liste d'objets | Les repas du menu en cours : `{"jour": "lundi", "repas": "dejeuner", "plat_id": 12, "origine": "suggestion"}`. Optionnel (défaut : liste vide). Chaque repas doit tomber à un jour choisi dans les réglages, sans doublon. Un repas peut manquer (base insuffisante). `repas` vaut `dejeuner` ou `diner`. `origine` (facultative, défaut `suggestion`) vaut `suggestion` ou `choix_libre` ; elle n'est lue que par `/valider` |
 | `cible` | objet | Le repas à changer : `{"jour": "lundi", "repas": "dejeuner"}`. Obligatoire pour `/choisir`, optionnel pour `/regenerer` |
 | `plat_id` | entier | Le plat choisi. Obligatoire pour `/choisir`, ignoré ailleurs |
 
@@ -161,6 +164,22 @@ menu entier à chaque réponse.
   aucun autre plat qui convienne). Sans `cible`, compose un nouveau menu complet.
 - `POST /api/menu/choisir` : pose `plat_id` sur `cible`. Le choix est libre : une règle non respectée
   donne un avertissement, jamais un refus. 422 avec `champs.plat_id` si le plat n'existe pas.
+- `POST /api/menu/valider` : enregistre les `repas` du menu en cours dans le journal des propositions,
+  à la semaine de `date_reference`. Une nouvelle validation remplace les lignes de cette semaine
+  (les autres semaines ne bougent pas), et les lignes de plus de 8 semaines sont purgées. Réponse 200 :
+  `{"semaine": "2026-10-26", "repas_enregistres": 14}`, où `semaine` est le lundi de la semaine
+  enregistrée. 422 avec `champs.repas` si le menu est vide, si un plat n'existe plus (le navigateur
+  doit alors régénérer ce repas) ou si une `origine` est inconnue ; rien n'est alors enregistré.
+- `DELETE /api/propositions` : vide le journal des propositions, pour repartir d'un historique vide
+  après des essais. Les plats et les catégories ne sont pas touchés. 204, corps vide, même quand le
+  journal était déjà vide.
+
+### Fraîcheur du tirage
+
+`POST /api/menu` et `POST /api/menu/regenerer` lisent le journal : un plat proposé récemment pèse
+moins au tirage, un plat jamais proposé pèse plus (PRD §5.4). La semaine du menu lui-même est
+ignorée, puisqu'une nouvelle validation la remplacerait. Aucune règle dure ne change : la fraîcheur
+ne fait que pondérer le tirage, elle n'exclut jamais un plat.
 
 ## Erreurs
 

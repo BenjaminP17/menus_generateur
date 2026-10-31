@@ -3,7 +3,9 @@
 namespace App\Controller;
 
 use App\Database\DishRepository;
+use App\Database\PropositionRepository;
 use App\Menu\Dish;
+use App\Menu\Freshness;
 use App\Menu\Menu;
 use App\Menu\MenuEdit;
 use App\Menu\MenuEditValidator;
@@ -11,6 +13,7 @@ use App\Menu\MenuGenerator;
 use App\Menu\MenuMeal;
 use App\Menu\MenuRequest;
 use App\Menu\MenuRequestValidator;
+use App\Menu\Week;
 use Symfony\Component\HttpFoundation\Exception\JsonException;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -20,13 +23,15 @@ use Symfony\Component\Routing\Attribute\Route;
 /**
  * Génération et modification du menu (PRD §5.2 à §5.4).
  *
- * Rien n'est stocké côté serveur : le navigateur renvoie à chaque demande les réglages et le menu
- * en cours, et reçoit le menu complet en réponse.
+ * Le menu en cours n'est pas stocké côté serveur : le navigateur renvoie à chaque demande les
+ * réglages et le menu en cours, et reçoit le menu complet en réponse. Seule la validation écrit
+ * dans le journal des propositions, qui alimente la fraîcheur du tirage.
  */
 final class MenuController
 {
     public function __construct(
         private readonly DishRepository $dishes,
+        private readonly PropositionRepository $propositions,
         private readonly MenuRequestValidator $requestValidator,
         private readonly MenuEditValidator $editValidator,
         private readonly MenuGenerator $generator,
@@ -41,7 +46,7 @@ final class MenuController
             return $menuRequest;
         }
 
-        return $this->menu($this->generator->generate($this->dishes->findAll(), $menuRequest));
+        return $this->menu($this->generator->generate($this->dishes->findAll(), $menuRequest, $this->freshness($menuRequest)));
     }
 
     /**
@@ -57,7 +62,7 @@ final class MenuController
         [$menuRequest, $edit, $dishes] = $read;
 
         if (!$edit->hasTarget()) {
-            return $this->menu($this->generator->generate(array_values($dishes), $menuRequest));
+            return $this->menu($this->generator->generate(array_values($dishes), $menuRequest, $this->freshness($menuRequest)));
         }
 
         $menu = $this->generator->regenerate(
@@ -66,6 +71,7 @@ final class MenuController
             $this->currentMeals($edit, $dishes),
             (int) $edit->targetDay,
             $edit->targetKind ?? throw new \LogicException('Cible sans repas.'),
+            $this->freshness($menuRequest),
         );
 
         return null === $menu
@@ -96,6 +102,47 @@ final class MenuController
             $menuRequest,
             new MenuMeal((int) $edit->targetDay, $edit->targetKind ?? throw new \LogicException('Cible sans repas.'), $chosen),
         ));
+    }
+
+    /**
+     * Enregistre le menu en cours dans le journal des propositions, à la semaine de la date de
+     * référence. Une nouvelle validation remplace les lignes de cette semaine.
+     */
+    #[Route('/api/menu/valider', name: 'api_menu_validate', methods: ['POST'])]
+    public function validate(Request $request): JsonResponse
+    {
+        $read = $this->readEdit($request, targetRequired: false, dishRequired: false);
+        if ($read instanceof JsonResponse) {
+            return $read;
+        }
+        [$menuRequest, $edit, $dishes] = $read;
+
+        if ([] === $edit->placements) {
+            return $this->invalid(['repas' => 'Le menu est vide : il n\'y a rien à valider.']);
+        }
+        foreach ($edit->placements as $placement) {
+            if (!isset($dishes[$placement->dishId])) {
+                return $this->invalid(['repas' => 'Un plat du menu n\'existe plus : régénère ce repas avant de valider.']);
+            }
+        }
+
+        $monday = Week::mondayOf($menuRequest->referenceDate);
+        $this->propositions->replaceWeek($monday, $edit->placements);
+
+        return new JsonResponse([
+            'semaine' => $monday->format('Y-m-d'),
+            'repas_enregistres' => count($edit->placements),
+        ]);
+    }
+
+    /**
+     * Fraîcheur des plats pour la semaine du menu : un plat proposé récemment pèse moins au tirage.
+     */
+    private function freshness(MenuRequest $request): Freshness
+    {
+        $week = Week::mondayOf($request->referenceDate);
+
+        return Freshness::fromHistory($this->propositions->lastProposedByDish($week), $week);
     }
 
     private function menu(Menu $menu): JsonResponse

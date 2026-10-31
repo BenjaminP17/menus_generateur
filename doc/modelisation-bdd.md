@@ -88,7 +88,16 @@ Le générateur travaille en trois temps.
    - `categorie_principale` différente entre le déjeuner et le dîner d'un même jour.
 3. **Tirage pondéré** : chaque plat éligible reçoit un poids égal à `poids` multiplié par un facteur de fraîcheur. Ce facteur est déduit de `proposition` : un plat proposé récemment est pénalisé, un plat jamais proposé est favorisé.
 
-La rétention de `proposition` est fixée à 8 semaines : les lignes plus anciennes sont supprimées pour garder le journal petit.
+La rétention de `proposition` est fixée à 8 semaines : les lignes plus anciennes sont supprimées pour garder le journal petit (purge à chaque validation de menu, `PropositionRepository::purge()`).
+
+Le facteur de fraîcheur est calculé par `App\Menu\Freshness` à partir de la dernière semaine où chaque plat a été proposé (hors la semaine du menu composé) :
+
+| Dernière proposition | Poids du tirage |
+|---|---|
+| Jamais, ou il y a 8 semaines ou plus | `poids` × 150 % |
+| Il y a *n* semaines (1 à 7) | `poids` × 150 % × *n* / 8 (19 % la semaine d'avant, 131 % à 7 semaines) |
+
+Sans aucune ligne dans le journal, le poids reste `poids` : le tirage est celui du jalon 3. Les deux constantes (`RETENTION_WEEKS`, `NEVER_PERCENT`) sont dans `Freshness` et se règlent là.
 
 ## Décisions
 
@@ -98,7 +107,7 @@ La rétention de `proposition` est fixée à 8 semaines : les lignes plus ancien
 
 ## Points à décider
 
-- **Force de la pénalité de fraîcheur** et **durée de rétention** (8 semaines proposé).
+- **Force de la pénalité de fraîcheur** et **durée de rétention** : valeurs du jalon 5 (8 semaines, de 19 % à 150 % du poids) posées par défaut, à confirmer à l'usage.
 
 ## DDL SQLite
 
