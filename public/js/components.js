@@ -97,11 +97,11 @@ export function groupeRadio({ legende, nom, options, valeur }) {
 }
 
 /** Bandeau d'avertissement ou d'erreur (doc/design.md §5). */
-export function bandeau(message, { type = 'alerte', action = null } = {}) {
+export function bandeau(message, { type = 'alerte', action = null, pictogramme = 'alerte' } = {}) {
     return el(
         'div',
         { class: `bandeau bandeau-${type}`, role: type === 'erreur' ? 'alert' : 'status' },
-        icone('alerte'),
+        icone(pictogramme),
         el('p', {}, message),
         action,
     );

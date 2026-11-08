@@ -4,6 +4,7 @@ namespace App\Tests\Menu;
 
 use App\Menu\Dish;
 use App\Menu\DishType;
+use App\Menu\Freshness;
 use App\Menu\Level;
 use App\Menu\MealKind;
 use App\Menu\Menu;
@@ -366,11 +367,47 @@ final class MenuGeneratorTest extends TestCase
         return new MenuRequest($lunchDays, $dinnerDays, $share, new \DateTimeImmutable($date));
     }
 
-    /**
-     * @param list<Dish> $dishes
-     * @param list<int>  $lunchDays
-     * @param list<int>  $dinnerDays
-     */
+    public function testRecentlyProposedDishesAreDrawnLessOften(): void
+    {
+        $dishes = array_map(
+            static fn (int $id): Dish => DishFactory::dish($id, Season::Hybrid),
+            [1, 2, 3, 4, 5, 6],
+        );
+        $monday = new \DateTimeImmutable('2026-07-13');
+        $freshness = Freshness::fromHistory(
+            [1 => $monday->modify('-1 week'), 2 => $monday->modify('-1 week'), 3 => $monday->modify('-1 week')],
+            $monday,
+        );
+        $request = new MenuRequest([0], [0], VegetarianShare::None, new \DateTimeImmutable(self::SUMMER));
+
+        $fresh = 0;
+        $draws = 0;
+        foreach (range(1, 200) as $seed) {
+            $generator = new MenuGenerator(new SeasonResolver(), new Randomizer(new Mt19937($seed)), new MenuEvaluator(new SeasonResolver()));
+            foreach ($generator->generate($dishes, $request, $freshness)->meals as $meal) {
+                ++$draws;
+                $fresh += $meal->dish->id > 3 ? 1 : 0;
+            }
+        }
+
+        // Poids 150 contre 19 : les plats jamais proposés sortent environ 9 fois sur 10.
+        $this->assertGreaterThan(0.75, $fresh / $draws);
+    }
+
+    public function testWithoutFreshnessTheDrawIsTheSameAsWithAnEmptyHistory(): void
+    {
+        $dishes = DishFactory::catalogue(40);
+        $request = new MenuRequest(self::ALL, self::ALL, VegetarianShare::Some, new \DateTimeImmutable(self::SUMMER));
+        $make = static fn (): MenuGenerator => new MenuGenerator(new SeasonResolver(), new Randomizer(new Mt19937(7)), new MenuEvaluator(new SeasonResolver()));
+
+        $ids = static fn (Menu $menu): array => array_map(static fn (MenuMeal $meal): int => $meal->dish->id, $menu->meals);
+
+        $this->assertSame(
+            $ids($make()->generate($dishes, $request)),
+            $ids($make()->generate($dishes, $request, Freshness::none())),
+        );
+    }
+
     private function generate(array $dishes, array $lunchDays, array $dinnerDays, VegetarianShare $share, string $date, int $seed): Menu
     {
         $generator = new MenuGenerator(new SeasonResolver(), new Randomizer(new Mt19937($seed)), new MenuEvaluator(new SeasonResolver()));

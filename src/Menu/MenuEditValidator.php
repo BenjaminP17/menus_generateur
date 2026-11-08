@@ -4,8 +4,8 @@ namespace App\Menu;
 
 /**
  * Valide les champs d'une modification de menu, en plus des réglages (MenuRequestValidator) :
- * `repas` (le menu en cours), `cible` (le repas à changer) et `plat_id` (le plat choisi à la
- * main).
+ * `repas` (le menu en cours, chaque repas pouvant porter son `origine`), `cible` (le repas à
+ * changer) et `plat_id` (le plat choisi à la main).
  *
  * Les repas doivent tomber aux jours choisis dans les réglages, sans doublon ; un repas peut
  * manquer au menu en cours (base insuffisante). Comme ailleurs, une erreur par champ, et les
@@ -60,6 +60,16 @@ final class MenuEditValidator
                 return null;
             }
 
+            $origin = $this->readOrigin($item['origine'] ?? null);
+            if (null === $origin) {
+                $errors['repas'] = sprintf(
+                    "L'origine d'un repas est inconnue. Valeurs attendues : %s.",
+                    implode(', ', ProposalOrigin::values()),
+                );
+
+                return null;
+            }
+
             $key = $slot[0].$slot[1]->value;
             if (isset($seen[$key])) {
                 $errors['repas'] = 'Un même repas est indiqué plusieurs fois.';
@@ -68,7 +78,7 @@ final class MenuEditValidator
             }
             $seen[$key] = true;
 
-            $placements[] = new MenuPlacement($slot[0], $slot[1], $dishId);
+            $placements[] = new MenuPlacement($slot[0], $slot[1], $dishId, $origin);
         }
 
         return $placements;
@@ -134,6 +144,18 @@ final class MenuEditValidator
         }
 
         return [$day->index(), $kind];
+    }
+
+    /**
+     * Une origine absente vaut « suggestion » ; une origine présente mais inconnue donne null.
+     */
+    private function readOrigin(mixed $value): ?ProposalOrigin
+    {
+        if (null === $value) {
+            return ProposalOrigin::Suggestion;
+        }
+
+        return is_string($value) ? ProposalOrigin::tryFrom($value) : null;
     }
 
     private function readId(mixed $value): ?int

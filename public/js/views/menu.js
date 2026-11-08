@@ -40,9 +40,33 @@ function groupeJours({ legende, nom, selection }) {
     };
 }
 
-/** Repas du menu tels que l'API les attend en entrée. */
+/**
+ * Repas du menu tels que l'API les attend en entrée. `origine` (suggestion ou choix libre) est
+ * suivie par le navigateur, le serveur ne gardant pas le menu : elle part au journal à la validation.
+ */
 function placements(menu) {
-    return menu.repas.map((repas) => ({ jour: repas.jour, repas: repas.repas, plat_id: repas.plat.id }));
+    return menu.repas.map((repas) => ({
+        jour: repas.jour,
+        repas: repas.repas,
+        plat_id: repas.plat.id,
+        origine: repas.origine ?? 'suggestion',
+    }));
+}
+
+/**
+ * Origine des repas d'un menu tout juste reçu : celle qu'ils avaient (`anciennes`, par clé jour:repas),
+ * sauf le repas `cible` qui prend `origine` ; sans `anciennes`, tout est suggestion.
+ */
+function marquerOrigines(menu, anciennes, { cible = null, origine = 'suggestion' } = {}) {
+    for (const repas of menu.repas) {
+        const cle = `${repas.jour}:${repas.repas}`;
+        repas.origine = cle === cible ? origine : (anciennes?.get(cle) ?? 'suggestion');
+    }
+}
+
+/** « 2026-10-26 » devient « 26 octobre ». */
+function dateEnTexte(semaine) {
+    return new Date(`${semaine}T00:00:00`).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
 }
 
 function ecranBaseVide() {
@@ -160,6 +184,9 @@ export async function vueMenu() {
 
     // Menu
 
+    // Semaine du dernier menu validé, tant que le menu affiché n'a pas changé depuis.
+    let validee = null;
+
     const zoneMenu = el('div', { class: 'zone-menu' });
     const reglages = el('details', { class: 'reglages', open: courant === null });
 
@@ -177,10 +204,18 @@ export async function vueMenu() {
             { type: 'button', class: 'bouton bouton-secondaire', 'data-focus': 'tout', onClick: regenererTout },
             'Tout régénérer',
         );
+        const valider = el(
+            'button',
+            { type: 'button', class: 'bouton bouton-principal', 'data-focus': 'valider', onClick: validerMenu },
+            'Valider le menu',
+        );
 
         remplacer(
             zoneMenu,
-            el('div', { class: 'en-tete' }, titre, toutRegenerer),
+            el('div', { class: 'en-tete' }, titre, toutRegenerer, valider),
+            validee === null
+                ? null
+                : bandeau(`Menu validé pour la semaine du ${dateEnTexte(validee)}.`, { type: 'succes', pictogramme: 'coche' }),
             avertissements(menu),
             planning(courant),
         );
@@ -296,14 +331,18 @@ export async function vueMenu() {
     /**
      * Lance une action du menu : le menu reçu remplace l'ancien, sinon l'erreur s'affiche au-dessus
      * du planning. Le focus revient sur `focus` après le rendu, ou sur le bouton d'origine en cas d'erreur.
+     * `origines` dit d'où viennent les repas reçus (voir `marquerOrigines`) ; `toutes` repart de zéro.
      */
-    const executer = async (action, annonce, focus) => {
+    const executer = async (action, annonce, focus, origines = {}) => {
         const actif = document.activeElement;
+        const anciennes = new Map(courant.menu.repas.map((repas) => [`${repas.jour}:${repas.repas}`, repas.origine]));
         zoneErreur.replaceChildren();
         occuper(true);
         let echec = false;
         try {
             const menu = await action();
+            marquerOrigines(menu, origines.toutes ? null : anciennes, origines);
+            validee = null;
             courant = { reglages: courant.reglages, menu };
             garderMenu(courant.reglages, menu);
             afficherMenu(focus);
@@ -323,7 +362,7 @@ export async function vueMenu() {
     };
 
     function regenererTout() {
-        return executer(() => api.genererMenu(courant.reglages), 'Menu régénéré', 'tout');
+        return executer(() => api.genererMenu(courant.reglages), 'Menu régénéré', 'tout', { toutes: true });
     }
 
     function regenererRepas(jour, repas) {
@@ -331,6 +370,7 @@ export async function vueMenu() {
             () => api.regenererRepas(courant.reglages, placements(courant.menu), { jour, repas }),
             `${capitaliser(REPAS_EN_TEXTE[repas])} du ${jour} changé`,
             `${jour}:${repas}:changer`,
+            { cible: `${jour}:${repas}` },
         );
     }
 
@@ -343,12 +383,37 @@ export async function vueMenu() {
                 () => api.choisirPlat(courant.reglages, placements(courant.menu), { jour, repas }, plat.id),
                 `${capitaliser(REPAS_EN_TEXTE[repas])} du ${jour} : ${plat.nom}`,
                 `${jour}:${repas}:choisir`,
+                { cible: `${jour}:${repas}`, origine: 'choix_libre' },
             ),
             surAnnulation: () => declencheur.focus(),
         });
         document.body.append(boite.noeud);
         boite.noeud.showModal();
         boite.recherche.focus();
+    }
+
+    /**
+     * Enregistre le menu affiché dans le journal des propositions, pour que les prochains menus
+     * varient. Valider deux fois la même semaine remplace la première validation.
+     */
+    async function validerMenu() {
+        zoneErreur.replaceChildren();
+        occuper(true);
+        try {
+            const resultat = await api.validerMenu(courant.reglages, placements(courant.menu));
+            validee = resultat.semaine;
+            afficherMenu('valider');
+            annoncer(`Menu validé pour la semaine du ${dateEnTexte(validee)}`);
+        } catch (e) {
+            if (!(e instanceof ApiError)) {
+                throw e;
+            }
+            const champ = e.champs?.repas;
+            zoneErreur.append(bandeau(champ ?? e.message, { type: 'erreur' }));
+        } finally {
+            occuper(false);
+            zoneMenu.querySelector('[data-focus="valider"]')?.focus();
+        }
     }
 
     // Formulaire de réglages
@@ -366,6 +431,8 @@ export async function vueMenu() {
                 const demandes = lireReglages();
                 try {
                     const menu = await pendantAction(boutonGenerer, () => api.genererMenu(demandes));
+                    marquerOrigines(menu, null);
+                    validee = null;
                     courant = { reglages: demandes, menu };
                     garderMenu(demandes, menu);
                 } catch (e) {
@@ -404,8 +471,82 @@ export async function vueMenu() {
             reglages,
             zoneErreur,
             zoneMenu,
+            sectionHistorique(),
         ),
     };
+}
+
+/**
+ * Remise à zéro du journal des propositions, pour repartir d'un historique vide après des essais.
+ * Les plats ne sont pas touchés.
+ */
+function sectionHistorique() {
+    const message = el('div', { class: 'zone-alerte' });
+    const bouton = el(
+        'button',
+        {
+            type: 'button',
+            class: 'bouton bouton-secondaire',
+            onClick: () => confirmerReinitialisation(bouton, async () => {
+                message.replaceChildren();
+                try {
+                    await api.reinitialiserHistorique();
+                    message.append(bandeau('Historique réinitialisé.', { type: 'succes', pictogramme: 'coche' }));
+                    annoncer('Historique réinitialisé');
+                } catch (e) {
+                    if (!(e instanceof ApiError)) {
+                        throw e;
+                    }
+                    message.append(bandeau(e.message, { type: 'erreur' }));
+                }
+            }),
+        },
+        'Réinitialiser l\'historique',
+    );
+
+    return el(
+        'section',
+        { class: 'historique', 'aria-labelledby': 'titre-historique' },
+        el('h2', { id: 'titre-historique' }, 'Historique'),
+        el('p', { class: 'secondaire' }, 'Les menus que tu valides servent à varier les suivants. Tes plats ne sont pas touchés par la réinitialisation.'),
+        bouton,
+        message,
+    );
+}
+
+/**
+ * Confirmation dans un <dialog> modal, comme celle de la déconnexion : le focus part sur
+ * « Annuler », Échap annule, le focus revient sur le bouton d'origine à la fermeture.
+ */
+function confirmerReinitialisation(declencheur, surConfirmation) {
+    const idTitre = nouvelId('historique-titre');
+    const annuler = el('button', { type: 'button', class: 'bouton bouton-secondaire' }, 'Annuler');
+    const confirmer = el('button', { type: 'button', class: 'bouton bouton-destructif' }, 'Réinitialiser');
+    const boite = el(
+        'dialog',
+        { class: 'confirmation-modale', 'aria-labelledby': idTitre },
+        el('p', { id: idTitre }, 'Réinitialiser l\'historique ? Cette action est définitive.'),
+        el('div', { class: 'actions' }, confirmer, annuler),
+    );
+
+    const fermer = () => {
+        boite.close();
+        boite.remove();
+        declencheur.focus();
+    };
+    annuler.addEventListener('click', fermer);
+    boite.addEventListener('cancel', (evenement) => {
+        evenement.preventDefault();
+        fermer();
+    });
+    confirmer.addEventListener('click', async () => {
+        fermer();
+        await surConfirmation();
+    });
+
+    document.body.append(boite);
+    boite.showModal();
+    annuler.focus();
 }
 
 /**

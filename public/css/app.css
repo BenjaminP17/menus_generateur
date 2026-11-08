@@ -425,6 +425,12 @@ select {
     color: var(--danger);
 }
 
+.bandeau-succes {
+    border-color: var(--vegetarien-texte);
+    background: var(--vegetarien-fond);
+    color: var(--vegetarien-texte);
+}
+
 #banniere {
     padding: 0 1rem;
 }
@@ -588,7 +594,12 @@ select {
 }
 
 .zone-menu .en-tete {
+    flex-wrap: wrap;
     margin-top: 1rem;
+}
+
+.zone-menu .en-tete h2 {
+    flex: 1 1 8rem;
 }
 
 .zone-menu h2 {
@@ -780,4 +791,20 @@ select {
         transition-duration: 0.01ms !important;
         scroll-behavior: auto !important;
     }
+}
+
+/* Historique des menus validés */
+.historique {
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--bordure);
+}
+
+.historique h2 {
+    margin: 0 0 0.5rem;
+    font-size: 1.25rem;
+}
+
+.historique p {
+    margin: 0 0 0.75rem;
 }

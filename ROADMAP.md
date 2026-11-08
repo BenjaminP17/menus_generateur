@@ -60,19 +60,19 @@ Classes PHP pures dans `src/Menu/`, sans accès à la base ni au framework. Le g
 - [x] `POST /api/menu` : génère un menu
 - [x] `POST /api/menu/regenerer` : régénère un repas, ou tout le menu, sans toucher aux autres repas
 - [x] Choix libre d'un plat existant pour un repas, avec avertissement non bloquant si une règle n'est pas respectée
-- [ ] Frontend : formulaire de réglages (cases à cocher des jours, pour les déjeuners et pour les dîners), planning sur 7 jours, listes déjeuner et dîner, actions « régénérer ce repas », « choisir un plat », « tout régénérer », affichage des avertissements
-- [ ] Menu conservé côté navigateur (rien n'est stocké côté serveur à ce stade)
+- [x] Frontend : formulaire de réglages (cases à cocher des jours, pour les déjeuners et pour les dîners), planning sur 7 jours, listes déjeuner et dîner, actions « régénérer ce repas », « choisir un plat », « tout régénérer », affichage des avertissements
+- [x] Menu conservé côté navigateur (rien n'est stocké côté serveur à ce stade)
 - [x] Performance : génération en moins de 3 s avec 200 plats
 
 ## Jalon 5 : Journal `proposition` et fraîcheur
 
-Optionnel pour une livraison plus rapide, mais le PRD §5.4 demande la règle de fraîcheur.
+Optionnel pour une livraison plus rapide, mais le PRD §5.4 demande la règle de fraîcheur. Choix de fraîcheur (`App\Menu\Freshness`) et de rétention : voir `doc/modelisation-bdd.md`.
 
-- [ ] Écriture dans `proposition` à la validation du menu (décidé) : bouton « Valider le menu » et endpoint associé
-- [ ] Une nouvelle validation remplace les lignes de la semaine concernée
-- [ ] Pénalité de fraîcheur dans le tirage (plat récent moins tiré, plat jamais proposé favorisé)
-- [ ] Purge des propositions de plus de 8 semaines
-- [ ] Bouton « Réinitialiser l'historique » (pour les tests, avant l'usage réel) : vide `proposition` seulement, plats et catégories intacts. Endpoint `DELETE /api/propositions` (204, 401 hors session), confirmation dans un `<dialog>` avec le focus sur « Annuler ». Dépôt `PropositionRepository::clear()`
+- [x] Écriture dans `proposition` à la validation du menu (décidé) : bouton « Valider le menu » et endpoint associé
+- [x] Une nouvelle validation remplace les lignes de la semaine concernée
+- [x] Pénalité de fraîcheur dans le tirage (plat récent moins tiré, plat jamais proposé favorisé)
+- [x] Purge des propositions de plus de 8 semaines
+- [x] Bouton « Réinitialiser l'historique » (pour les tests, avant l'usage réel) : vide `proposition` seulement, plats et catégories intacts. Endpoint `DELETE /api/propositions` (204, 401 hors session), confirmation dans un `<dialog>` avec le focus sur « Annuler ». Dépôt `PropositionRepository::clear()`
 
 ## Jalon 6 : Finition et mise en production (o2switch)
 
@@ -84,7 +84,7 @@ Optionnel pour une livraison plus rapide, mais le PRD §5.4 demande la règle de
 
 ## Questions à trancher en cours de route
 
-- **Force de la pénalité de fraîcheur et durée de rétention** (jalon 5) : 8 semaines proposées.
+- **Force de la pénalité de fraîcheur et durée de rétention** (jalon 5) : posées par défaut (8 semaines, poids de 19 % à 150 % selon l'ancienneté, voir `doc/modelisation-bdd.md`), à confirmer à l'usage.
 - **Suppression d'un plat présent dans un menu affiché** (PRD §5.1) : tranché au jalon 1. La suppression est libre et sans condition (204), l'historique du plat part en cascade, et le menu affiché dans le navigateur reste inchangé puisqu'aucun menu n'est stocké côté serveur.
 - **Données de test** : uniquement des plats fictifs, dans les fixtures de tests. Aucune base de plats réelle n'est commitée.
 
