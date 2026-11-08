@@ -47,3 +47,6 @@ Thumbs.db
 /phpunit.xml
 /.phpunit.cache/
 ###< phpunit/phpunit ###
+
+# Rapport d'audit de sécurité (décrit des failles : ne pas versionner)
+/SECURITY-AUDIT.md
