@@ -120,7 +120,7 @@ Le menu contient exactement un déjeuner à chaque jour de déjeuner et un dîne
 
 | Champ | Type | Règle |
 |---|---|---|
-| `repas` | liste d'objets | Les repas du menu en cours : `{"jour": "lundi", "repas": "dejeuner", "plat_id": 12, "origine": "suggestion"}`. Optionnel (défaut : liste vide). Chaque repas doit tomber à un jour choisi dans les réglages, sans doublon. Un repas peut manquer (base insuffisante). `repas` vaut `dejeuner` ou `diner`. `origine` (facultative, défaut `suggestion`) vaut `suggestion` ou `choix_libre` ; elle n'est lue que par `/valider` |
+| `repas` | liste d'objets | Les repas du menu en cours : `{"jour": "lundi", "repas": "dejeuner", "plat_id": 12, "origine": "suggestion"}`. Optionnel (défaut : liste vide). Chaque repas doit tomber à un jour choisi dans les réglages, sans doublon. Un repas peut manquer (base insuffisante). `repas` vaut `dejeuner` ou `diner`. `origine` (facultative, défaut `suggestion`) vaut `suggestion` ou `choix_libre` ; elle sert à l'évaluation (pas de `niveau_de_repli` pour un `choix_libre`) et part au journal à `/valider` |
 | `cible` | objet | Le repas à changer : `{"jour": "lundi", "repas": "dejeuner"}`. Obligatoire pour `/choisir`, optionnel pour `/regenerer` |
 | `plat_id` | entier | Le plat choisi. Obligatoire pour `/choisir`, ignoré ailleurs |
 
@@ -150,7 +150,7 @@ absent, et un avertissement `plat_manquant` le signale dans le menu renvoyé.
 - Les messages sont destinés à l'utilisateur et affichables tels quels.
 
 Types d'avertissement : `plat_manquant`, `niveau_de_repli` (le niveau du jour, rapide en semaine et
-élaboré le week-end, n'est pas respecté), `vegetarien_insuffisant`, `vegetarien_excessif`,
+élaboré le week-end, n'est pas respecté, sauf pour un repas d'`origine` `choix_libre`, jamais signalé), `vegetarien_insuffisant`, `vegetarien_excessif`,
 `plat_en_double`, `hors_saison`, `repas_non_autorise`. Le générateur ne produit que les trois
 premiers ; les autres ne viennent que d'un choix libre. Les avertissements sont recalculés sur le
 menu entier à chaque réponse.

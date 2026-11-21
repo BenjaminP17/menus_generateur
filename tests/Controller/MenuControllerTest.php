@@ -218,8 +218,27 @@ final class MenuControllerTest extends FunctionalTestCase
             $byType[$warning['type']][] = $warning['repas'];
         }
         self::assertSame(['dejeuner'], $byType['hors_saison']);
-        self::assertSame(['dejeuner', 'diner'], $byType['niveau_de_repli'], 'lundi attend du rapide');
+        self::assertSame(['diner'], $byType['niveau_de_repli'], 'lundi attend du rapide, sauf pour le plat choisi à la main');
         self::assertTrue($menu['complet']);
+    }
+
+    public function testAFreeChoiceStaysWithoutLevelWarningWhenAnotherMealChanges(): void
+    {
+        $this->login();
+        $first = $this->createDish('Plat rapide');
+        $chosen = $this->createDish('Plat élaboré choisi', level: Level::Elaborate);
+        $this->createDish('Autre plat rapide');
+
+        $this->post('/api/menu/regenerer', $this->settings(['lundi'], ['mardi']) + [
+            'repas' => [
+                ['jour' => 'lundi', 'repas' => 'dejeuner', 'plat_id' => $chosen, 'origine' => 'choix_libre'],
+                ['jour' => 'mardi', 'repas' => 'diner', 'plat_id' => $first],
+            ],
+            'cible' => ['jour' => 'mardi', 'repas' => 'diner'],
+        ]);
+
+        self::assertSame(200, $this->client->getResponse()->getStatusCode());
+        self::assertNotContains('niveau_de_repli', array_column($this->menu()['avertissements'], 'type'));
     }
 
     public function testAFreeChoiceCanDuplicateADishAndSaysSo(): void

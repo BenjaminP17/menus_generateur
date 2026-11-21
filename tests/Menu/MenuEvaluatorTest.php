@@ -9,6 +9,7 @@ use App\Menu\MenuEvaluator;
 use App\Menu\MenuMeal;
 use App\Menu\MenuRequest;
 use App\Menu\MenuWarning;
+use App\Menu\ProposalOrigin;
 use App\Menu\Season;
 use App\Menu\SeasonResolver;
 use App\Menu\VegetarianShare;
@@ -84,6 +85,27 @@ final class MenuEvaluatorTest extends TestCase
         ], [0, 6], [3]);
 
         $this->assertSame([0, 6], array_map(static fn (MenuWarning $w): ?int => $w->day, $this->ofKind($warnings, WarningKind::LevelFallback)));
+    }
+
+    public function testDoesNotReportTheLevelOfADishChosenByHand(): void
+    {
+        $warnings = $this->evaluate([
+            new MenuMeal(0, MealKind::Lunch, DishFactory::dish(1, level: Level::Elaborate), ProposalOrigin::FreeChoice),
+            new MenuMeal(5, MealKind::Lunch, DishFactory::dish(2, level: Level::Quick), ProposalOrigin::FreeChoice),
+            new MenuMeal(1, MealKind::Lunch, DishFactory::dish(3, level: Level::Elaborate)),
+        ], [0, 1, 5], [3]);
+
+        $this->assertSame([1], array_map(static fn (MenuWarning $w): ?int => $w->day, $this->ofKind($warnings, WarningKind::LevelFallback)));
+    }
+
+    public function testStillReportsOtherWarningsOnADishChosenByHand(): void
+    {
+        $warnings = $this->evaluate([
+            new MenuMeal(0, MealKind::Lunch, DishFactory::dish(1, Season::AutumnWinter, level: Level::Elaborate), ProposalOrigin::FreeChoice),
+        ], [0], [3], '2026-07-14');
+
+        $this->assertCount(1, $this->ofKind($warnings, WarningKind::OutOfSeason));
+        $this->assertSame([], $this->ofKind($warnings, WarningKind::LevelFallback));
     }
 
     public function testReportsTooFewAndTooManyVegetarianMeals(): void
