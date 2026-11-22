@@ -74,6 +74,15 @@ Optionnel pour une livraison plus rapide, mais le PRD §5.4 demande la règle de
 - [x] Purge des propositions de plus de 8 semaines
 - [x] Bouton « Réinitialiser l'historique » (pour les tests, avant l'usage réel) : vide `proposition` seulement, plats et catégories intacts. Endpoint `DELETE /api/propositions` (204, 401 hors session), confirmation dans un `<dialog>` avec le focus sur « Annuler ». Dépôt `PropositionRepository::clear()`
 
+## Jalon 5b : Améliorations après test
+
+Trois améliorations issues d'un test de l'application. Décisions : le partage est un texte envoyé côté navigateur (aucun menu enregistré sur le serveur), un plat choisi à la main ne déclenche plus d'avertissement de niveau, et l'état « validé » survit au rechargement de la page.
+
+- [x] Choix libre sans avertissement de niveau : un repas choisi à la main (`origine = choix_libre`), semaine comme week-end, ne produit plus de `niveau_de_repli`. `MenuMeal` porte l'origine (ou `MenuEvaluator::evaluate` reçoit les placements) ; `MenuController::choose` et `currentMeals` la transmettent. La règle rapide / élaboré reste une préférence douce du générateur. Tests : `MenuEvaluatorTest` et `MenuControllerTest::testAFreeChoiceIsAcceptedWithWarnings` à adapter
+- [x] Notifications masquées une fois le menu validé : le bandeau d'avertissements et la pastille « À vérifier » disparaissent tant que le menu est validé. L'état validé est persisté dans `public/js/menu-store.js` (avec `reglages` et `menu`) ; toute génération, régénération ou choix d'un plat l'annule et réaffiche les avertissements
+- [x] Partage du menu validé : bouton « Partager », visible seulement quand le menu est validé. Texte simple (un jour par ligne, déjeuner et dîner) ; `navigator.share` quand il existe (mobile), sinon copie dans le presse-papiers avec message de confirmation. Module dédié dans `public/js/`
+- [x] Documentation : `doc/api.md` (l'origine n'est plus lue seulement par `/valider`) et `doc/design.md` (bouton « Partager », avertissements masqués après validation)
+
 ## Jalon 6 : Finition et mise en production (o2switch)
 
 - [ ] Accessibilité WCAG 2.1 AA : clavier, contrastes, libellés, annonces d'état
@@ -95,5 +104,5 @@ Optionnel pour une livraison plus rapide, mais le PRD §5.4 demande la règle de
 - `vendor/bin/php-cs-fixer fix --dry-run`
 - `php bin/console lint:container`
 - Jalons 1, 1b et 4 : `php -S localhost:8000 -t public`, puis appels sur `/api/plats`, `/api/session` et `/api/menu`
-- Jalons 2, 4 et 6 : test manuel dans le navigateur, sur ordinateur et téléphone, clavier seul
+- Jalons 2, 4, 5b et 6 : test manuel dans le navigateur, sur ordinateur et téléphone, clavier seul
 - Critères de succès du PRD §3 vérifiés par des tests sur le générateur, avec une base de 200 plats fictifs (saison, niveau, absence de doublon, nombre exact de repas, temps de génération)

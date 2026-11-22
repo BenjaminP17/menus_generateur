@@ -3,6 +3,7 @@ import { afficherMessage, messageChamp, nouvelId, pastillesDuPlat, pendantAction
 import { annoncer, capitaliser, el, normaliser, remplacer } from '../dom.js';
 import { icone, illustration } from '../icons.js';
 import { garderMenu, lireMenu } from '../menu-store.js';
+import { partager, texteDuMenu } from '../partage.js';
 
 const JOURS = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
 const REPAS = [['dejeuner', 'Déjeuner'], ['diner', 'Dîner']];
@@ -184,8 +185,9 @@ export async function vueMenu() {
 
     // Menu
 
-    // Semaine du dernier menu validé, tant que le menu affiché n'a pas changé depuis.
-    let validee = null;
+    // Semaine du dernier menu validé, tant que le menu affiché n'a pas changé depuis. Gardée avec
+    // le menu : un menu validé le reste après un rechargement.
+    let validee = courant?.validee ?? null;
 
     const zoneMenu = el('div', { class: 'zone-menu' });
     const reglages = el('details', { class: 'reglages', open: courant === null });
@@ -212,12 +214,13 @@ export async function vueMenu() {
 
         remplacer(
             zoneMenu,
-            el('div', { class: 'en-tete' }, titre, toutRegenerer, valider),
+            el('div', { class: 'en-tete' }, titre, toutRegenerer, valider, validee === null ? null : partagerMenu()),
             validee === null
                 ? null
                 : bandeau(`Menu validé pour la semaine du ${dateEnTexte(validee)}.`, { type: 'succes', pictogramme: 'coche' }),
-            avertissements(menu),
-            planning(courant),
+            // Un menu validé n'a plus de notification : l'utilisateur a tranché.
+            validee === null ? avertissements(menu) : null,
+            planning(courant, validee === null),
         );
 
         if (focus === 'titre') {
@@ -227,6 +230,13 @@ export async function vueMenu() {
             zoneMenu.querySelector(`[data-focus="${focus}"]`)?.focus();
         }
     };
+
+    /** Bouton « Partager », présent seulement quand le menu est validé. */
+    const partagerMenu = () => el(
+        'button',
+        { type: 'button', class: 'bouton bouton-secondaire', 'data-focus': 'partager', onClick: partagerLeMenu },
+        'Partager',
+    );
 
     /** Bandeau qui résume tous les écarts du menu. */
     const avertissements = (menu) => {
@@ -247,11 +257,11 @@ export async function vueMenu() {
         );
     };
 
-    const planning = ({ reglages: utilises, menu }) => {
+    const planning = ({ reglages: utilises, menu }, signaler) => {
         const jours = JOURS.filter((jour) => utilises.jours_dejeuners.includes(jour) || utilises.jours_diners.includes(jour));
         const repasDuMenu = new Map(menu.repas.map((repas) => [`${repas.jour}:${repas.repas}`, repas]));
         const aVerifier = new Set(
-            menu.avertissements.filter((a) => a.jour !== undefined).map((a) => `${a.jour}:${a.repas}`),
+            signaler ? menu.avertissements.filter((a) => a.jour !== undefined).map((a) => `${a.jour}:${a.repas}`) : [],
         );
         const idsDuMenu = new Set(menu.repas.map((repas) => repas.plat.id));
 
@@ -402,6 +412,7 @@ export async function vueMenu() {
         try {
             const resultat = await api.validerMenu(courant.reglages, placements(courant.menu));
             validee = resultat.semaine;
+            garderMenu(courant.reglages, courant.menu, validee);
             afficherMenu('valider');
             annoncer(`Menu validé pour la semaine du ${dateEnTexte(validee)}`);
         } catch (e) {
@@ -414,6 +425,20 @@ export async function vueMenu() {
             occuper(false);
             zoneMenu.querySelector('[data-focus="valider"]')?.focus();
         }
+    }
+
+    async function partagerLeMenu() {
+        zoneErreur.replaceChildren();
+        const titre = `Menu de la semaine du ${dateEnTexte(validee)}`;
+        try {
+            const resultat = await partager(titre, texteDuMenu(courant.menu, titre));
+            if (resultat === 'copie') {
+                zoneErreur.append(bandeau('Menu copié : tu peux le coller où tu veux.', { type: 'succes', pictogramme: 'coche' }));
+            }
+        } catch {
+            zoneErreur.append(bandeau('Impossible de partager le menu depuis ce navigateur.', { type: 'erreur' }));
+        }
+        zoneMenu.querySelector('[data-focus="partager"]')?.focus();
     }
 
     // Formulaire de réglages

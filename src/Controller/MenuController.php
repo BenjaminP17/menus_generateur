@@ -13,6 +13,7 @@ use App\Menu\MenuGenerator;
 use App\Menu\MenuMeal;
 use App\Menu\MenuRequest;
 use App\Menu\MenuRequestValidator;
+use App\Menu\ProposalOrigin;
 use App\Menu\Week;
 use Symfony\Component\HttpFoundation\Exception\JsonException;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -100,7 +101,7 @@ final class MenuController
         return $this->menu($this->generator->place(
             $this->currentMeals($edit, $dishes),
             $menuRequest,
-            new MenuMeal((int) $edit->targetDay, $edit->targetKind ?? throw new \LogicException('Cible sans repas.'), $chosen),
+            new MenuMeal((int) $edit->targetDay, $edit->targetKind ?? throw new \LogicException('Cible sans repas.'), $chosen, ProposalOrigin::FreeChoice),
         ));
     }
 
@@ -163,7 +164,7 @@ final class MenuController
         $meals = [];
         foreach ($edit->placements as $placement) {
             if (isset($dishes[$placement->dishId])) {
-                $meals[] = new MenuMeal($placement->day, $placement->kind, $dishes[$placement->dishId]);
+                $meals[] = new MenuMeal($placement->day, $placement->kind, $dishes[$placement->dishId], $placement->origin);
             }
         }
 

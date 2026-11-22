@@ -47,7 +47,7 @@ Cas d'usage principaux :
 
 ### Hors périmètre
 
-- Enregistrement ou partage des menus. Un journal des plats proposés, sans menu, est prévu pour éviter les redites (voir `doc/modelisation-bdd.md`).
+- Enregistrement des menus. Le partage d'un menu validé est permis, sous forme de texte envoyé depuis le navigateur, sans stockage côté serveur. Un journal des plats proposés, sans menu, est prévu pour éviter les redites (voir `doc/modelisation-bdd.md`).
 - Comptes utilisateurs, plusieurs profils, synchronisation entre appareils.
 - Nombre de personnes à table (pas de calcul de quantités).
 - Liste de courses.

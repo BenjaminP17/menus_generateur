@@ -51,7 +51,7 @@ Ces règles sont le cœur du produit ; le générateur doit les respecter et sig
 ## Points de vigilance
 
 - Ne pas coder sur une règle marquée « À valider » dans le PRD sans en parler à l'utilisateur ; les questions ouvertes du PRD §7 doivent d'abord être tranchées.
-- Hors périmètre V1 : enregistrement des menus (le journal `proposition` des plats proposés, sans menu, est prévu : voir `doc/modelisation-bdd.md`), comptes multiples, plusieurs profils, nombre de personnes, liste de courses, recettes détaillées, nutrition, allergies, jours de fête. Ne pas les ajouter.
+- Hors périmètre V1 : enregistrement des menus (le partage d'un menu validé, en texte depuis le navigateur sans stockage serveur, est permis, jalon 5b ; le journal `proposition` des plats proposés, sans menu, est prévu : voir `doc/modelisation-bdd.md`), comptes multiples, plusieurs profils, nombre de personnes, liste de courses, recettes détaillées, nutrition, allergies, jours de fête. Ne pas les ajouter.
 - Authentification (jalon 1b, SEC-01) : un compte unique, ses identifiants dans `.env.local`, vérifié par `App\Security\Credentials` et gardé par `App\EventListener\AuthenticationListener`. Volontairement pas de table `utilisateur` ni de lien avec `plat` ou `proposition` : un seul foyer, donc rien à distinguer. Ne pas ajouter de table tant qu'il n'y a qu'un compte.
 - Ne pas committer de données personnelles ni de base de plats réelle ; pas de secrets dans le dépôt. Les plats de test sont fictifs (`tests/Support/DishFactory.php`).
 - `src/Menu/DishNameNormalizer.php` est le seul point qui calcule `nom_normalise` : insertion, modification, détection de doublon et tri doivent passer par lui, sinon l'unicité des noms devient incohérente.

@@ -6,7 +6,8 @@ namespace App\Menu;
  * Passe un menu en revue et signale les règles non respectées (PRD §5.3 et §5.4).
  *
  * Le générateur ne viole jamais une contrainte dure, mais le choix libre d'un plat le permet :
- * l'évaluateur sert aux deux. Il ne bloque rien, il ne fait que produire les avertissements.
+ * l'évaluateur sert aux deux. Il ne bloque rien, il ne fait que produire les avertissements. Seul
+ * le niveau du jour (rapide / élaboré) n'est pas signalé pour un plat choisi à la main.
  */
 final class MenuEvaluator
 {
@@ -81,8 +82,9 @@ final class MenuEvaluator
                 );
             }
 
+            // Un plat choisi à la main est voulu : le niveau du jour n'est qu'une préférence du générateur.
             $expectedLevel = Level::expectedOnDay($day);
-            if ($dish->level !== $expectedLevel) {
+            if (ProposalOrigin::FreeChoice !== $meal->origin && $dish->level !== $expectedLevel) {
                 $warnings[] = new MenuWarning(
                     WarningKind::LevelFallback,
                     sprintf(
